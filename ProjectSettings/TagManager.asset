@@ -8,6 +8,8 @@ TagManager:
   - shared
   - right
   - left
+  - projectile
+  - ball
   layers:
   - Default
   - TransparentFX
