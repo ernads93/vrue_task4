@@ -1,0 +1,9 @@
+- Time and score E
+- Player cant move over the edge E
+- Ball create over network J
+
+Sonntag:
+- Position sync with pinch JE 
+- Authority JE
+
+If time: Special thing
