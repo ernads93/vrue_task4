@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -33,7 +33,7 @@ namespace Leap.Unity.Interaction {
   /// Leap Motion Controller, or by remote-style held controllers
   /// such as the Oculus Touch or Vive controller.
   /// </summary>
-  public enum ControllerType { Hand, VRController }
+  public enum ControllerType { Hand, XRController }
 
   [DisallowMultipleComponent]
   public abstract class InteractionController : MonoBehaviour,
@@ -137,6 +137,16 @@ namespace Leap.Unity.Interaction {
     public bool isRight { get { return !isLeft; } }
 
     /// <summary>
+    /// Returns the current position of this controller.
+    /// </summary>
+    public abstract Vector3 position { get; }
+
+    /// <summary>
+    /// Returns the current rotation of this controller.
+    /// </summary>
+    public abstract Quaternion rotation { get; }
+
+    /// <summary>
     /// Returns the current velocity of this controller.
     /// </summary>
     public abstract Vector3 velocity { get; }
@@ -156,8 +166,8 @@ namespace Leap.Unity.Interaction {
     public abstract InteractionHand intHand { get; }
 
     /// <summary>
-    /// Contact requires knowledge of the controller's scale.
-    /// TODO: Warn if the controller is scaled non-uniformly.
+    /// Contact requires knowledge of the controller's scale. Non-uniformly scaled
+    /// controllers are NOT supported.
     /// </summary>
     public float scale { get { return this.transform.lossyScale.x; } }
 
@@ -185,6 +195,21 @@ namespace Leap.Unity.Interaction {
     /// Called every (fixed) frame this InteractionController is primarily hovering over an InteractionBehaviour.
     /// </summary>
     public Action<InteractionBehaviour> OnStayPrimaryHoveringObject = (intObj) => { };
+
+    /// <summary>
+    /// Called when the InteractionController begins grasping an object.
+    /// </summary>
+    public Action OnGraspBegin = () => { };
+
+    /// <summary>
+    /// Called while the InteractionController is grasping an object.
+    /// </summary>
+    public Action OnGraspStay = () => { };
+
+    /// <summary>
+    /// Called when the InteractionController releases an object.
+    /// </summary>
+    public Action OnGraspEnd = () => { };
 
     #endregion
 
@@ -227,13 +252,11 @@ namespace Leap.Unity.Interaction {
     /// Interaction Hand with state from the Leap hand and perform bookkeeping operations.
     /// </summary>
     void IInternalInteractionController.FixedUpdateController() {
-      using (new ProfilerSample("Fixed Update InteractionController", contactBoneParent)) {
-        fixedUpdateController();
+      fixedUpdateController();
 
-        if (hoverEnabled)    fixedUpdateHovering();
-        if (contactEnabled)  fixedUpdateContact();
-        if (graspingEnabled) fixedUpdateGrasping();
-      }
+      if (hoverEnabled)    fixedUpdateHovering();
+      if (contactEnabled)  fixedUpdateContact();
+      if (graspingEnabled) fixedUpdateGrasping();
     }
 
     public void NotifyObjectUnregistered(IInteractionBehaviour intObj) {
@@ -943,6 +966,9 @@ namespace Leap.Unity.Interaction {
       // Clear contact data if we lose tracking.
       if (!isTracked && _contactBehaviours.Count > 0) {
         _contactBehaviours.Clear();
+
+        // Also clear soft contact state if tracking is lost.
+        _softContactCollisions.Clear();
       }
 
       // Disable contact bone parent if we lose tracking.
@@ -1016,51 +1042,64 @@ namespace Leap.Unity.Interaction {
 
       // Set a fixed rotation for bones; otherwise most friction is lost
       // as any capsule or spherical bones will roll on contact.
-      body.MoveRotation(targetRotation);
+      using (new ProfilerSample("updateContactBone: MoveRotation")) {
+        body.MoveRotation(targetRotation);
+      }
 
       // Calculate how far off its target the contact bone is.
-      Vector3 lastTargetPositionTransformedAhead = contactBone.lastTargetPosition;
-      if (manager.hasMovingFrameOfReference) {
-        manager.TransformAheadByFixedUpdate(contactBone.lastTargetPosition, out lastTargetPositionTransformedAhead);
+      float errorDistance = 0f;
+      float errorFraction = 0f;
+      using (new ProfilerSample("updateContactBone: errorDistance, errorFraction")) {
+        Vector3 lastTargetPositionTransformedAhead = contactBone.lastTargetPosition;
+        if (manager.hasMovingFrameOfReference) {
+          manager.TransformAheadByFixedUpdate(contactBone.lastTargetPosition, out lastTargetPositionTransformedAhead);
+        }
+        errorDistance = Vector3.Distance(lastTargetPositionTransformedAhead, body.position);
+        errorFraction = errorDistance / contactBone.width;
       }
-      float errorDistance = Vector3.Distance(lastTargetPositionTransformedAhead, body.position);
-      float errorFraction = errorDistance / contactBone.width;
 
       // Adjust the mass of the contact bone based on the mass of
       // the object it is currently touching.
-      float speed = velocity.magnitude;
-      float massScale = Mathf.Clamp(1.0F - (errorFraction * 2.0F), 0.1F, 1.0F)
+      float speed = 0f;
+      using (new ProfilerSample("updateContactBone: speed & massScale")) {
+        speed = velocity.magnitude;
+        float massScale = Mathf.Clamp(1.0F - (errorFraction * 2.0F), 0.1F, 1.0F)
                       * Mathf.Clamp(speed * 10F, 1F, 10F);
-      body.mass = massScale * contactBone._lastObjectTouchedAdjustedMass;
+        body.mass = massScale * contactBone._lastObjectTouchedAdjustedMass;
+      }
 
       // Potentially enable Soft Contact if our error is too large.
-      if (!_softContactEnabled && errorDistance >= softContactDislocationDistance
+      using (new ProfilerSample("updateContactBone: maybe enable Soft Contact")) {
+        if (!_softContactEnabled && errorDistance >= softContactDislocationDistance
           && speed < 1.5F
        /* && boneArrayIndex != NUM_FINGERS * BONES_PER_FINGER */) {
-         EnableSoftContact();
+          EnableSoftContact();
+        }
       }
 
       // Attempt to move the contact bone to its target position and rotation
       // by setting its target velocity and angular velocity. Include a "deadzone"
       // for position to avoid tiny vibrations.
-      float deadzone = Mathf.Min(DEAD_ZONE_FRACTION * contactBone.width, 0.01F * scale);
-      Vector3 delta = (targetPosition - body.position);
-      float deltaMag = delta.magnitude;
-      if (deltaMag <= deadzone) {
-        body.velocity = Vector3.zero;
-        contactBone.lastTargetPosition = body.position;
-      }
-      else {
-        delta *= (deltaMag - deadzone) / deltaMag;
-        contactBone.lastTargetPosition = body.position + delta;
+      using (new ProfilerSample("updateContactBone: Move to target, with deadzone")) {
+        float deadzone = Mathf.Min(DEAD_ZONE_FRACTION * contactBone.width, 0.01F * scale);
+        Vector3 delta = (targetPosition - body.position);
+        float deltaMag = delta.magnitude;
+        if (deltaMag <= deadzone) {
+          body.velocity = Vector3.zero;
+          contactBone.lastTargetPosition = body.position;
+        }
+        else {
+          delta *= (deltaMag - deadzone) / deltaMag;
+          contactBone.lastTargetPosition = body.position + delta;
 
-        Vector3 targetVelocity = delta / Time.fixedDeltaTime;
-        float targetVelocityMag = targetVelocity.magnitude;
-        body.velocity = (targetVelocity / targetVelocityMag)
-                      * Mathf.Clamp(targetVelocityMag, 0F, 100F);
+          Vector3 targetVelocity = delta / Time.fixedDeltaTime;
+          float targetVelocityMag = targetVelocity.magnitude;
+          body.velocity = (targetVelocity / targetVelocityMag)
+                        * Mathf.Clamp(targetVelocityMag, 0F, 100F);
+        }
+        Quaternion deltaRot = targetRotation * Quaternion.Inverse(body.rotation);
+        body.angularVelocity = PhysicsUtility.ToAngularVelocity(deltaRot, Time.fixedDeltaTime);
       }
-      Quaternion deltaRot = targetRotation * Quaternion.Inverse(body.rotation);
-      body.angularVelocity = PhysicsUtility.ToAngularVelocity(deltaRot, Time.fixedDeltaTime);
     }
 
     #endregion
@@ -1125,9 +1164,14 @@ namespace Leap.Unity.Interaction {
             for (int i = 0; i < numCollisions; i++) {
               //NotifySoftContactOverlap(contactBone, _softContactColliderBuffer[i]);
 
-              // Skip soft contact if the object is ignoring contact
+              // If the rigidbody is null, the object may have been destroyed.
               if (_softContactColliderBuffer[i].attachedRigidbody == null) continue;
-              if (manager.interactionObjectBodies[_softContactColliderBuffer[i].attachedRigidbody].ignoreContact) continue;
+              IInteractionBehaviour intObj;
+              if (manager.interactionObjectBodies.TryGetValue(_softContactColliderBuffer[i].attachedRigidbody, out intObj)) {
+                // Skip soft contact if the object is ignoring contact.
+                if (intObj.ignoreContact) continue;
+                if (intObj.isGrasped) continue;
+              }
 
               PhysicsUtility.generateSphereContact(boneSphere, 0, _softContactColliderBuffer[i],
                                                    ref manager._softContacts,
@@ -1148,9 +1192,14 @@ namespace Leap.Unity.Interaction {
             for (int i = 0; i < numCollisions; i++) {
               //NotifySoftContactOverlap(contactBone, _softContactColliderBuffer[i]);
 
-              // Skip soft contact if the object is ignoring contact
+              // If the rigidbody is null, the object may have been destroyed.
               if (_softContactColliderBuffer[i].attachedRigidbody == null) continue;
-              if (manager.interactionObjectBodies[_softContactColliderBuffer[i].attachedRigidbody].ignoreContact) continue;
+              IInteractionBehaviour intObj;
+              if (manager.interactionObjectBodies.TryGetValue(_softContactColliderBuffer[i].attachedRigidbody, out intObj)) {
+                // Skip soft contact if the object is ignoring contact.
+                if (intObj.ignoreContact) continue;
+                if (intObj.isGrasped) continue;
+              }
 
               PhysicsUtility.generateCapsuleContact(boneCapsule, 0,
                                                     _softContactColliderBuffer[i],
@@ -1177,9 +1226,14 @@ namespace Leap.Unity.Interaction {
             for (int i = 0; i < numCollisions; i++) {
               //NotifySoftContactOverlap(contactBone, _softContactColliderBuffer[i]);
 
-              // Skip soft contact if the object is ignoring contact
+              // If the rigidbody is null, the object may have been destroyed.
               if (_softContactColliderBuffer[i].attachedRigidbody == null) continue;
-              if (manager.interactionObjectBodies[_softContactColliderBuffer[i].attachedRigidbody].ignoreContact) continue;
+              IInteractionBehaviour intObj;
+              if (manager.interactionObjectBodies.TryGetValue(_softContactColliderBuffer[i].attachedRigidbody, out intObj)) {
+                // Skip soft contact if the object is ignoring contact.
+                if (intObj.ignoreContact) continue;
+                if (intObj.isGrasped) continue;
+              }
 
               PhysicsUtility.generateBoxContact(boneBox, 0, _softContactColliderBuffer[i],
                                                 ref manager._softContacts,
@@ -1216,6 +1270,9 @@ namespace Leap.Unity.Interaction {
 
         if (_softContactCollisions.Count > 0) {
           _disableSoftContactEnqueued = false;
+          if (_delayedDisableSoftContactCoroutine != null) {
+            manager.StopCoroutine(_delayedDisableSoftContactCoroutine);
+          }
         }
         else {
           // If there are no detected Contacts, exit soft contact mode.
@@ -1235,7 +1292,7 @@ namespace Leap.Unity.Interaction {
     protected virtual void onPreEnableSoftContact() { }
 
     /// <summary>
-    /// Optioanlly override this method to perform logic just after soft contact
+    /// Optionally override this method to perform logic just after soft contact
     /// is disabled for this controller.
     ///
     /// The InteractionHand implementation takes the opportunity to reset its contact
@@ -1256,10 +1313,13 @@ namespace Leap.Unity.Interaction {
           if (_delayedDisableSoftContactCoroutine != null) {
             manager.StopCoroutine(_delayedDisableSoftContactCoroutine);
           }
-          for (int i = 0; i < contactBones.Length; i++) {
-            if (contactBones[i].collider == null) continue;
 
-            disableContactBoneCollision();
+          if (contactBones != null) {
+            for (int i = 0; i < contactBones.Length; i++) {
+              if (contactBones[i].collider == null) continue;
+
+              disableContactBoneCollision();
+            }
           }
         }
       }
@@ -1276,7 +1336,6 @@ namespace Leap.Unity.Interaction {
     }
 
     private IEnumerator DelayedDisableSoftContact() {
-      if (_disableSoftContactEnqueued) { yield break; }
       yield return new WaitForSecondsRealtime(0.3f);
       if (_disableSoftContactEnqueued) {
         using (new ProfilerSample("Disable Soft Contact")) {
@@ -1607,6 +1666,79 @@ namespace Leap.Unity.Interaction {
     /// </summary>
     public abstract Vector3 GetGraspPoint();
 
+    /// <summary>
+    /// Checks if the provided interaction object can be grasped by this interaction
+    /// controller in its current state. If so, the controller will initiate a grasp and
+    /// this method will return true, otherwise this method returns false.
+    /// </summary>
+    public bool TryGrasp(IInteractionBehaviour intObj) {
+      if (checkShouldGraspAtemporal(intObj)) {
+        _graspedObject = intObj;
+        OnGraspBegin();
+
+        return true;
+      }
+
+      return false;
+    }
+
+    /// <summary>
+    /// Seamlessly swap the currently grasped object for a replacement object.  It will
+    /// behave like the hand released the current object, and then grasped the new object.
+    /// 
+    /// This method will not teleport the replacement object or move it in any way, it will
+    /// just cause it to be grasped.  That means that you will be responsible for moving
+    /// the replacement object into a reasonable position for it to be grasped.
+    /// </summary>
+    public virtual void SwapGrasp(IInteractionBehaviour replacement) {
+      if (_graspedObject == null) {
+        throw new InvalidOperationException("Cannot swap grasp if we are not currently grasping.");
+      }
+
+      if (replacement == null) {
+        throw new ArgumentNullException("The replacement object is null!");
+      }
+
+      if (replacement.isGrasped && !replacement.allowMultiGrasp) {
+        throw new InvalidOperationException("Cannot swap grasp if the replacement object is already grasped and does not support multi grasp.");
+      }
+
+      //Notify the currently grasped object that it is being released
+      _releasingControllersBuffer.Clear();
+      _releasingControllersBuffer.Add(this);
+      _graspedObject.EndGrasp(_releasingControllersBuffer);
+      OnGraspEnd();
+
+      //Switch to the replacement object
+      _graspedObject = replacement;
+
+      var tempControllers = Pool<List<InteractionController>>.Spawn();
+      try {
+        //Let the replacement object know that it is being grasped
+        tempControllers.Add(this);
+        replacement.BeginGrasp(tempControllers);
+        OnGraspBegin();
+      } 
+      finally {
+        tempControllers.Clear();
+        Pool<List<InteractionController>>.Recycle(tempControllers);
+      }
+    }
+
+    /// <summary>
+    /// Checks if the provided interaction object can be grasped by this interaction
+    /// controller in its current state. If so, the controller will initiate a grasp and
+    /// this method will return true, otherwise this method returns false.
+    /// 
+    /// This method is useful if the controller requires conditions to initiate a grasp
+    /// that differ from the conditions necessary to maintain a grasp after it has been
+    /// initiated. This method allows a grasp to occur if certain initiation conditions
+    /// are not met, such as the motion of a hand's fingers towards the palm,
+    /// but if the grasp holding conditions are met, such as the penetration of a hand's
+    /// fingers inside the interaction object.
+    /// </summary>
+    protected abstract bool checkShouldGraspAtemporal(IInteractionBehaviour intObj);
+
     private Func<Collider, IInteractionBehaviour> graspActivityFilter;
     private IInteractionBehaviour graspFilterFunc(Collider collider) {
       Rigidbody body = collider.attachedRigidbody;
@@ -1702,8 +1834,9 @@ namespace Leap.Unity.Interaction {
         var tempGraspedObject = _graspedObject;
 
         // Clear controller grasped object, and enable soft contact.
-        EnableSoftContact();
+        OnGraspEnd();
         _graspedObject = null;
+        EnableSoftContact();
 
         // Fire object's grasp-end callback.
         tempGraspedObject.EndGrasp(_releasingControllersBuffer);
@@ -1746,12 +1879,15 @@ namespace Leap.Unity.Interaction {
         // Note: controllersBuffer is iterated twice to preserve state modification order.
         // For reference order, see InteractionController.ReleaseGrasp() above.
         foreach (var controller in controllersBuffer) {
-          // Avoid "popping" of released objects by enabling soft contact on releasing
-          // controllers.
-          controller.EnableSoftContact();
+          // Fire grasp end callback for the controller.
+          controller.OnGraspEnd();
 
           // Clear grasped object state.
           controller._graspedObject = null;
+
+          // Avoid "popping" of released objects by enabling soft contact on releasing
+          // controllers.
+          controller.EnableSoftContact();
         }
 
         // Evaluate object logic for being released by each controller.
@@ -1826,6 +1962,7 @@ namespace Leap.Unity.Interaction {
       if (!shouldReleaseObject) shouldReleaseObject = checkShouldRelease(out releasedObject);
 
       if (shouldReleaseObject) {
+        OnGraspEnd();
         _graspedObject = null;
         EnableSoftContact(); // prevent objects popping out of the hand on release
         return true;
@@ -1852,6 +1989,7 @@ namespace Leap.Unity.Interaction {
       bool shouldGraspObject = checkShouldGrasp(out newlyGraspedObject);
       if (shouldGraspObject) {
         _graspedObject = newlyGraspedObject;
+        OnGraspBegin();
 
         return true;
       }
@@ -1866,6 +2004,7 @@ namespace Leap.Unity.Interaction {
     /// </summary>
     bool IInternalInteractionController.CheckGraspHold(out IInteractionBehaviour graspedObject) {
       graspedObject = _graspedObject;
+      OnGraspStay();
       return graspedObject != null;
     }
 

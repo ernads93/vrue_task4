@@ -6,9 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Task3.unity
-    guid: 852d53a237346174cb888e594f5e4026
-  - enabled: 1
-    path: Assets/Task3_leap.unity
+    path: Assets/Task3_vive.unity
     guid: 1ecb862b62cb8674d9b559f66d260ec9
+  - enabled: 1
+    path: Assets/task3_leap.unity
+    guid: 59d4a5cef151f7a4c8db96c89c0e6e7f
   m_configObjects: {}

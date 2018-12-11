@@ -20,7 +20,7 @@ public class LeapGrab : MonoBehaviour
     // Use this for initialization
     void Start()
     {     
-        
+      
     }
 
     // Update is called once per frame
@@ -29,20 +29,21 @@ public class LeapGrab : MonoBehaviour
         if (actor == null)
         {      
             actor = gameObject.GetComponentInChildren<Actor>();
-            if(actor != null)
+            if(actor != null)  
                 actor.leapStatus = true;
         }
-
-        if (leftHandTouching && rightHandTouching && leftPinch && rightPinch)
+        
+        if ((leftHandTouching && leftPinch) || (rightPinch && rightHandTouching))
         {
             // notify AuthorityManager that grab conditions are fulfilled
-            //print("LEAP IS GRABABLE");
+            print("LEAP IS GRABABLE");
 
             if (actor.lastCollider != null)
             {
                // print("lastcollider is: " + actor.lastCollider);
                 am = actor.lastCollider.GetComponent<AuthorityManager>();
                 am.grabbedByPlayer = true;
+                am.grabbeyByLeft = leftHandTouching;
             }           
         }
         else

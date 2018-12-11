@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -8,11 +8,16 @@
  ******************************************************************************/
 
 using Leap.Unity.Attributes;
-using Leap.Unity.Interaction.Internal;
+
+#if UNITY_2017_2_OR_NEWER
+using UnityEngine.XR;
+#else
+using UnityEngine.VR;
+#endif
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.VR;
 using Leap.Unity.Query;
 using Leap.Unity.Space;
 using UnityEngine.Serialization;
@@ -20,25 +25,27 @@ using UnityEngine.Serialization;
 namespace Leap.Unity.Interaction {
 
   [DisallowMultipleComponent]
-  public class InteractionVRController : InteractionController {
+  public class InteractionXRController : InteractionController {
+
+    #region Inspector
 
     [Header("Controller Configuration")]
 
-    [Tooltip("Read-only. InteractionVRControllers use Unity's built-in VRNode tracking "
-           + "API to receive tracking data for VR controllers by default. If you add a "
+    [Tooltip("Read-only. InteractionXRControllers use Unity's built-in XRNode tracking "
+           + "API to receive tracking data for XR controllers by default. If you add a "
            + "custom script to set this controller's trackingProvider to something "
-           + "other than the DefaultVRNodeTrackingProvider, the change will be reflected "
+           + "other than the DefaultXRNodeTrackingProvider, the change will be reflected "
            + "here. (Hint: Use the ExecuteInEditMode attribute.)")]
     [Disable, SerializeField]
     #pragma warning disable 0414
-    private string _trackingProviderType = "DefaultVRNodeTrackingProvider";
-    #pragma warning restore 0414
+    private string _trackingProviderType = "DefaultXRNodeTrackingProvider";
+#pragma warning restore 0414
     public bool isUsingCustomTracking {
-      get { return !(trackingProvider is DefaultVRNodeTrackingProvider); }
+      get { return !(trackingProvider is DefaultXRNodeTrackingProvider); }
     }
 
-    [Tooltip("If this string is not empty and does not match a controller in Input.GetJoystickNames()"
-           + ", then this game object will disable itself.")]
+    [Tooltip("If this string is not empty and does not match a controller in "
+           + "Input.GetJoystickNames(), then this game object will disable itself.")]
     [SerializeField, EditTimeOnly]
     [FormerlySerializedAs("_deviceString")]
     private string _deviceJoystickTokens = "oculus touch right"; // or, e.g., "openvr controller right"
@@ -49,6 +56,31 @@ namespace Leap.Unity.Interaction {
     [SerializeField, EditTimeOnly]
     private Chirality _chirality;
     public Chirality chirality { get { return _chirality; } }
+
+    [Tooltip("Whether to continuously poll attached joystick data for a joystick that "
+           + "matches the device joystick tokens, using Input.GetJoystickNames(). This "
+           + "call allocates garbage, so be wary of setting a low polling interval.")]
+    [SerializeField, OnEditorChange("pollConnection")]
+    private bool _pollConnection = true;
+    /// <summary>
+    /// Whether to continuously poll attached joystick data for a joystick that
+    /// matches the device joystick tokens, using Input.GetJoystickNames(). This
+    /// call allocates garbage, so be wary of setting a low polling interval.
+    /// 
+    /// The connection is polled only until a joystick is detected to minimize allocation.
+    /// Once a joystick has been detected (isJoystickDetected), you must manually call
+    /// RefreshControllerConnection() to check if the joystick is no longer detected.
+    /// </summary>
+    public bool pollConnection {
+      get { return _pollConnection; }
+      set { _pollConnection = value; }
+    }
+    [Tooltip("The period in seconds at which to check if the controller is connected "
+           + "by calling Input.GetJoystickNames(). This call allocates garbage, so be "
+           + "wary of setting a low polling interval.")]
+    [MinValue(0f)]
+    [DisableIf("_pollConnection", isEqualTo: false)]
+    public float pollConnectionInterval = 2f;
 
     [Header("Hover Configuration")]
 
@@ -92,12 +124,134 @@ namespace Leap.Unity.Interaction {
            + "grasp point.")]
     public float graspTimingSlop = 0.10F;
 
+    [Header("Enable/Disable GameObjects with Tracking State")]
+    
+    [Tooltip("These objects will be made active only while the controller is tracked. "
+           + "For more fine-tuned behavior, we recommend implementing your own logic. "
+           + "controller.isJoystickDetected and controller.isTracked are useful for this.")]
+    [SerializeField]
+    private List<GameObject> _enableObjectsOnlyWhenTracked;
+    /// <summary>
+    /// These objects will be made active only while the controller is tracked. For more
+    /// fine-tuned behavior, we recommend implementing your own logic.
+    /// 
+    /// controller.isJoystickDetected and controller.isTracked are useful for this.
+    /// </summary>
+    public List<GameObject> enableObjectsOnlyWhenTracked {
+      get {
+        if (_enableObjectsOnlyWhenTracked == null) {
+          _enableObjectsOnlyWhenTracked = new List<GameObject>();
+        }
+        return _enableObjectsOnlyWhenTracked;
+      }
+    }
+
+    #endregion // Inspector
+
+    #region Unity Events
+
+    protected override void Reset() {
+      base.Reset();
+
+      hoverEnabled = true;
+      contactEnabled = true;
+      graspingEnabled = true;
+
+      trackingProvider = _defaultTrackingProvider;
+      _hoverPoint = null;
+      primaryHoverPoints.Clear();
+      graspPoint = null;
+
+      maxGraspDistance = 0.06F;
+      graspTimingSlop = 0.1F;
+    }
+
+    protected virtual void OnValidate() {
+      _trackingProviderType = trackingProvider.GetType().ToString();
+    }
+
+    protected override void Start() {
+      base.Start();
+
+      trackingProvider.OnTrackingDataUpdate += refreshControllerTrackingData;
+    }
+
+    protected override void fixedUpdateController() {
+      fixedUpdatePollConnection();
+
+      if (isTracked) {
+        foreach (var gameObject in enableObjectsOnlyWhenTracked) {
+          gameObject.SetActive(true);
+        }
+      }
+      else {
+        foreach (var gameObject in enableObjectsOnlyWhenTracked) {
+          gameObject.SetActive(false);
+        }
+      }
+
+      refreshContactBoneTargets();
+    }
+
+    #endregion
+
+    #region Controller Connection Polling
+
+    private bool _isJoystickDetected = false;
+    /// <summary>
+    /// Whether the device joystick tokens matched an entry in Input.GetJoystickNames().
+    /// If pollConnection is set to true, this status is refreshed periodically based on
+    /// the pollConnectionInterval, but only while the joystick tokens have not been
+    /// detected from Input.GetJoystickNames(). Call RefreshControllerConnection() to
+    /// detect if the controller has been disconnected.
+    /// 
+    /// Joystick detection is skipped if deviceJoystickTokens is null or empty, causing
+    /// this check to always return true.
+    /// </summary>
+    public bool isJoystickDetected {
+      get { return string.IsNullOrEmpty(deviceJoystickTokens) || _isJoystickDetected; }
+    }
+
+    private float _pollTimer = 0f;
+
+    private void fixedUpdatePollConnection() {
+      if (_pollConnection && !_isJoystickDetected) {
+        _pollTimer += Time.fixedDeltaTime;
+      }
+
+      if (_pollConnection && _pollTimer >= pollConnectionInterval) {
+        _pollTimer = 0f;
+
+        RefreshControllerConnection();
+      }
+    }
+
+    public void RefreshControllerConnection() {
+      _isJoystickDetected = true; // deviceJoystickTokens must be parsible to falsify.
+
+      if (deviceJoystickTokens != null && deviceJoystickTokens.Length > 0) {
+        string[] joysticksConnected = Input.GetJoystickNames().Query()
+          .Select(s => s.ToLower()).ToArray();
+        string[] controllerSupportTokens = deviceJoystickTokens.ToLower()
+          .Split(" ".ToCharArray());
+        bool matchesController = joysticksConnected.Query()
+                                 .Any(joystick => controllerSupportTokens.Query()
+                                                 .All(token => joystick.Contains(token)));
+
+        _isJoystickDetected = matchesController;
+      }
+    }
+
+    #endregion
+
+    #region Controller Tracking
+
     private bool _hasTrackedPositionLastFrame = false;
     private Vector3 _trackedPositionLastFrame = Vector3.zero;
     private Quaternion _trackedRotationLastFrame = Quaternion.identity;
 
-    private IVRControllerTrackingProvider _backingTrackingProvider = null;
-    public IVRControllerTrackingProvider trackingProvider {
+    private IXRControllerTrackingProvider _backingTrackingProvider = null;
+    public IXRControllerTrackingProvider trackingProvider {
       get {
         if (_backingDefaultTrackingProvider == null) {
           _backingDefaultTrackingProvider = _defaultTrackingProvider;
@@ -118,8 +272,8 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    private IVRControllerTrackingProvider _backingDefaultTrackingProvider;
-    private IVRControllerTrackingProvider _defaultTrackingProvider {
+    private IXRControllerTrackingProvider _backingDefaultTrackingProvider;
+    private IXRControllerTrackingProvider _defaultTrackingProvider {
       get {
         if (_backingDefaultTrackingProvider == null) {
           refreshDefaultTrackingProvider();
@@ -133,70 +287,13 @@ namespace Leap.Unity.Interaction {
     }
 
     private void refreshDefaultTrackingProvider() {
-      var defaultProvider = gameObject.GetComponent<DefaultVRNodeTrackingProvider>();
+      var defaultProvider = gameObject.GetComponent<DefaultXRNodeTrackingProvider>();
       if (defaultProvider == null) {
-        defaultProvider = gameObject.AddComponent<DefaultVRNodeTrackingProvider>();
+        defaultProvider = gameObject.AddComponent<DefaultXRNodeTrackingProvider>();
       }
-      defaultProvider.vrNode = this.vrNode;
+      defaultProvider.xrNode = this.xrNode;
 
       _defaultTrackingProvider = defaultProvider;
-    }
-
-    protected virtual void OnValidate() {
-      _trackingProviderType = trackingProvider.GetType().ToString();
-    }
-
-    protected virtual void Awake() {
-      if (deviceJoystickTokens.Length > 0) {
-        string[] joysticksConnected = Input.GetJoystickNames().Query().Select(s => s.ToLower()).ToArray();
-        string[] controllerSupportTokens = deviceJoystickTokens.ToLower().Split(" ".ToCharArray());
-        bool matchesController = joysticksConnected.Query()
-                                 .Any(joystick => controllerSupportTokens.Query()
-                                                 .All(token => joystick.Contains(token)));
-        if (!matchesController) {
-          string message = "";
-          message += "No joystick name containing the tokens ";
-          for (int i = 0; i < controllerSupportTokens.Length; i++) {
-            message += "'" + controllerSupportTokens[i] + "'";
-            if (i < controllerSupportTokens.Length - 2) {
-              message += ", ";
-            }
-            else if (i == controllerSupportTokens.Length - 2) {
-              message += ", and ";
-            }
-          }
-          message += " was detected; disabling controller object. Please check the "
-                   + "device string if this was in error.";
-          Debug.Log(message, gameObject);
-          gameObject.SetActive(false);
-        }
-      }
-    }
-
-    protected override void Start() {
-      base.Start();
-
-      trackingProvider.OnTrackingDataUpdate += refreshControllerTrackingData;
-    }
-
-    protected override void Reset() {
-      base.Reset();
-
-      hoverEnabled = true;
-      contactEnabled = true;
-      graspingEnabled = true;
-
-      trackingProvider = _defaultTrackingProvider;
-      _hoverPoint = null;
-      primaryHoverPoints.Clear();
-      graspPoint = null;
-
-      maxGraspDistance = 0.06F;
-      graspTimingSlop = 0.1F;
-    }
-
-    protected override void fixedUpdateController() {
-      refreshContactBoneTargets();
     }
 
     private void refreshControllerTrackingData(Vector3 position, Quaternion rotation) {
@@ -218,37 +315,74 @@ namespace Leap.Unity.Interaction {
       }
     }
 
+    #endregion
+
+    #region Movement Detection
+
     private const float RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD = 00.07F;
+    private const float RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD_SQR
+      = RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD * RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD;
     private const float RIG_LOCAL_ROTATION_SPEED_THRESHOLD = 10.00F;
     private const float BEING_MOVED_TIMEOUT = 0.5F;
 
     private float _lastTimeMoved = 0F;
     private bool  _isBeingMoved = false;
     private void refreshIsBeingMoved(Vector3 position, Quaternion rotation) {
-      Transform baseTransform = Camera.main.transform.parent;
-      if (((baseTransform.InverseTransformPoint(position)
-            - baseTransform.InverseTransformPoint(_trackedPositionLastFrame)) / Time.fixedDeltaTime).magnitude > RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD
-           || Quaternion.Angle(baseTransform.InverseTransformRotation(rotation),
-                               baseTransform.InverseTransformRotation(_trackedRotationLastFrame)) / Time.fixedDeltaTime > RIG_LOCAL_ROTATION_SPEED_THRESHOLD) {
+      var isMoving = false;
+      var baseTransform = this.manager.transform;
+
+      // Check translation speed, relative to the Interaction Manager.
+      var baseLocalPos = baseTransform.InverseTransformPoint(position);
+      var baseLocalPosLastFrame =baseTransform.InverseTransformPoint(
+        _trackedPositionLastFrame);
+      var baseLocalSqrSpeed = ((baseLocalPos - baseLocalPosLastFrame)
+        / Time.fixedDeltaTime).sqrMagnitude;
+      if (baseLocalSqrSpeed > RIG_LOCAL_MOVEMENT_SPEED_THRESHOLD_SQR) {
+        isMoving = true;
+      }
+
+      // Check rotation speed, relative to the Interaction Manager.
+      var baseLocalRot = baseTransform.InverseTransformRotation(rotation);
+      var baseLocalRotLastFrame = baseTransform.InverseTransformRotation(
+        _trackedRotationLastFrame);
+      var baseLocalAngularSpeed = Quaternion.Angle(baseLocalRot, baseLocalRotLastFrame)
+        / Time.fixedDeltaTime;
+      if (baseLocalAngularSpeed > RIG_LOCAL_ROTATION_SPEED_THRESHOLD) {
+        isMoving = true;
+      }
+
+      if (isMoving) {
         _lastTimeMoved = Time.fixedTime;
       }
 
-      _isBeingMoved = trackingProvider != null && trackingProvider.isTracked && Time.fixedTime - _lastTimeMoved < BEING_MOVED_TIMEOUT;
+      // "isMoving" lasts for a bit after the controller stops moving, to avoid
+      // rapid oscillation of the value.
+      var timeSinceLastMoving = Time.fixedTime - _lastTimeMoved;
+      _isBeingMoved = trackingProvider != null && trackingProvider.isTracked
+        && timeSinceLastMoving < BEING_MOVED_TIMEOUT;
     }
+
+    #endregion
 
     #region General InteractionController Implementation
 
     /// <summary>
-    /// Gets whether or not the underlying controller is currently tracked.
+    /// Gets whether or not the underlying controller is currently tracked and any
+    /// joystick token filtering has confirmed that this controller has been detected as
+    /// a connected joystick.
     /// </summary>
     public override bool isTracked {
       get {
-        return trackingProvider != null && trackingProvider.isTracked;
+        return isJoystickDetected && trackingProvider != null && trackingProvider.isTracked;
       }
     }
 
     /// <summary>
-    /// Gets whether or not the underlying controller is currently being moved in worldspace.
+    /// Gets whether or not the underlying controller is currently being moved in world
+    /// space, but relative to the Interaction Manager's transform. The Interaction
+    /// Manager is usually a sibling of the main camera beneath the camera rig transform,
+    /// so that if your application is only translating the player rig in space, this
+    /// method won't incorrectly return true.
     /// </summary>
     public override bool isBeingMoved {
       get {
@@ -257,19 +391,44 @@ namespace Leap.Unity.Interaction {
     }
 
     /// <summary>
-    /// Gets the VRNode associated with this VR controller. Note: If the tracking mode 
+    /// Gets the XRNode associated with this XR controller. Note: If the tracking mode 
     /// for this controller is specified as ControllerTrackingMode.Custom, this value
     /// may be ignored.
     /// </summary>
-    public UnityEngine.XR.XRNode vrNode {
-      get { return chirality == Chirality.Left ? UnityEngine.XR.XRNode.LeftHand : UnityEngine.XR.XRNode.RightHand; }
+    /// 
+    #if UNITY_2017_2_OR_NEWER
+    public XRNode xrNode {
+      get { return chirality == Chirality.Left ? XRNode.LeftHand : XRNode.RightHand; }
     }
+    #else
+    public VRNode xrNode {
+      get { return chirality == Chirality.Left ? VRNode.LeftHand : VRNode.RightHand; }
+    }
+    #endif
 
     /// <summary>
     /// Gets whether the controller is a left-hand controller.
     /// </summary>
     public override bool isLeft {
       get { return chirality == Chirality.Left; }
+    }
+
+    /// <summary>
+    /// Gets the last-tracked position of the controller.
+    /// </summary>
+    public override Vector3 position {
+      get {
+        return this.transform.position;
+      }
+    }
+
+    /// <summary>
+    /// Gets the last-tracked rotation of the controller.
+    /// </summary>
+    public override Quaternion rotation {
+      get {
+        return this.transform.rotation;
+      }
     }
 
     /// <summary>
@@ -291,7 +450,7 @@ namespace Leap.Unity.Interaction {
     /// always ControllerType.VRController.
     /// </summary>
     public override ControllerType controllerType {
-      get { return ControllerType.VRController; }
+      get { return ControllerType.XRController; }
     }
 
     /// <summary>
@@ -426,9 +585,12 @@ namespace Leap.Unity.Interaction {
       _contactBoneBuffer.Clear();
 
       // Scan for existing colliders and construct contact bones out of them.
-      Utils.FindColliders<Collider>(this.gameObject, _colliderBuffer);
+      Utils.FindColliders<Collider>(this.gameObject, _colliderBuffer,
+        includeInactiveObjects: true);
 
       foreach (var collider in _colliderBuffer) {
+        if (collider.isTrigger) continue; // Contact Bones are for "contacting" colliders.
+
         ContactBone contactBone = collider.gameObject.AddComponent<ContactBone>();
         Rigidbody body = collider.gameObject.GetComponent<Rigidbody>();
         if (body == null) {
@@ -557,7 +719,7 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    private void fixedUpdateGraspButtonState() {
+    private void fixedUpdateGraspButtonState(bool ignoreTemporal = false) {
       _graspButtonDown = false;
       _graspButtonUp = false;
 
@@ -611,17 +773,40 @@ namespace Leap.Unity.Interaction {
       if (_graspButtonDownSlopTimer > 0F) {
         _graspButtonDownSlopTimer -= Time.fixedDeltaTime;
       }
-
+      
       _graspButtonLastFrame = graspButton;
     }
 
     protected override bool checkShouldGrasp(out IInteractionBehaviour objectToGrasp) {
       bool shouldGrasp = !isGraspingObject
-                      && (_graspButtonDown || _graspButtonDownSlopTimer > 0F)
-                      && _closestGraspableObject != null;
+                         && (_graspButtonDown || _graspButtonDownSlopTimer > 0F)
+                         && _closestGraspableObject != null;
 
       objectToGrasp = null;
       if (shouldGrasp) { objectToGrasp = _closestGraspableObject; }
+
+      return shouldGrasp;
+    }
+
+    /// <summary>
+    /// If the provided object is within range of this VR controller's grasp point and
+    /// the grasp button is currently held down, this method will manually initiate a
+    /// grasp and return true. Otherwise, the method returns false.
+    /// </summary>
+    protected override bool checkShouldGraspAtemporal(IInteractionBehaviour intObj) {
+      bool shouldGrasp = !isGraspingObject
+                         && _graspButtonLastFrame
+                         && intObj.GetHoverDistance(graspPoint.position) < maxGraspDistance;
+      if (shouldGrasp) {
+        var tempControllers = Pool<List<InteractionController>>.Spawn();
+        try {
+          intObj.BeginGrasp(tempControllers);
+        }
+        finally {
+          tempControllers.Clear();
+          Pool<List<InteractionController>>.Recycle(tempControllers);
+        }
+      }
 
       return shouldGrasp;
     }

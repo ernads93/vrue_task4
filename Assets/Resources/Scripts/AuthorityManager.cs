@@ -3,6 +3,7 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using Leap.Unity.Interaction;
 
 // TODO: this script should manage authority for a shared object
 public class AuthorityManager : NetworkBehaviour
@@ -20,6 +21,12 @@ public class AuthorityManager : NetworkBehaviour
     {
         get { return grabbed; }
         set { grabbed = value; }
+    }
+    private bool leftHand = false;
+    public bool grabbeyByLeft 
+    {
+        get { return leftHand; }
+        set { leftHand = value; }
     }
 
     OnGrabbedBehaviour onb; // component defining the behaviour of this GO when it is grabbed by a player
@@ -60,7 +67,7 @@ public class AuthorityManager : NetworkBehaviour
             {
                 pendingAccess = false;
 
-                // print("we have authority");
+                 print("we have authority");
                 if (grabbedByPlayer)
                 {
                     // print(name + " id: " + netId);
@@ -73,6 +80,8 @@ public class AuthorityManager : NetworkBehaviour
                         onb.leap = localActor.leapStatus;
                         onb.setActor(localActor);
                         onb.OnGrabbed();
+                        GetComponent<InteractionBehaviour>().enabled = true;
+                        onb.grabbedByLeft(leftHand);
                     }
                 }
                 else
@@ -80,6 +89,7 @@ public class AuthorityManager : NetworkBehaviour
                     if (!pendingRelease)
                     {
                         onb.OnReleased();
+                        GetComponent<InteractionBehaviour>().enabled = false;
                         //onb.setColor(Color.green);
                         print("we return auhtority: ");
                         localActor.ReturnObjectAuthority(netID);
@@ -93,7 +103,7 @@ public class AuthorityManager : NetworkBehaviour
             }
             else if (grabbedByPlayer && !pendingAccess)
             {
-                //print("we want control");
+                print("we want control");
                 localActor.RequestObjectAuthority(netID);
                 pendingAccess = true;
             }          
@@ -114,6 +124,7 @@ public class AuthorityManager : NetworkBehaviour
         if (netID.clientAuthorityOwner == null) //no client has authority
         {
            netID.AssignClientAuthority(conn);
+           onb.setGravityFalse();
         }
         else
         {
@@ -128,7 +139,7 @@ public class AuthorityManager : NetworkBehaviour
         if(netID.clientAuthorityOwner == conn) // client controlling object wants to release authority
         {
             netID.RemoveClientAuthority(conn);
-
+            onb.setGravityTrue();
             if (requestAuth.Count != 0) // we have pending ones
             {               
                 NetworkConnection next = requestAuth[0];

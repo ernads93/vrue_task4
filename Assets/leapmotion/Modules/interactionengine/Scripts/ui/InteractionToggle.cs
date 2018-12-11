@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -45,8 +45,8 @@ namespace Leap.Unity.Interaction {
           }
           restingHeight = isToggled ? toggledRestingHeight : _originalRestingHeight;
           rigidbody.WakeUp();
-          depressedThisFrame = value;
-          unDepressedThisFrame = !value;
+          _pressedThisFrame = value;
+          _unpressedThisFrame = !value;
         }
       }
     }
@@ -72,11 +72,43 @@ namespace Leap.Unity.Interaction {
     public Action OnUntoggle = () => { };
 
     private float _originalRestingHeight;
+    public float untoggledRestingHeight {
+      get {
+        return _originalRestingHeight;
+      }
+    }
+
+    /// <summary>
+    /// Returns the local position of this toggle when it is able to relax into its untoggled position.
+    /// </summary>
+    public Vector3 RelaxedToggledLocalPosition {
+      get {
+        return initialLocalPosition + Vector3.back * Mathf.Lerp(minMaxHeight.x, minMaxHeight.y, toggledRestingHeight);
+      }
+    }
+
+    /// <summary>
+    /// Returns the local position of this toggle when it is able to relax into its untoggled position.
+    /// </summary>
+    public override Vector3 RelaxedLocalPosition {
+      get {
+        if (!Application.isPlaying) {
+          return initialLocalPosition + Vector3.back * Mathf.Lerp(minMaxHeight.x, minMaxHeight.y, restingHeight);
+        }
+        else {
+          return initialLocalPosition + Vector3.back * Mathf.Lerp(minMaxHeight.x, minMaxHeight.y, untoggledRestingHeight);
+        }
+      }
+    }
+
+    protected override void Awake() {
+      base.Awake();
+      
+      _originalRestingHeight = restingHeight;
+    }
 
     protected override void Start() {
       base.Start();
-
-      _originalRestingHeight = restingHeight;
 
       if (_startToggled) {
         isToggled = true;
@@ -98,6 +130,21 @@ namespace Leap.Unity.Interaction {
 
     private void OnPressed() {
       isToggled = !isToggled;
+    }
+
+    /// <summary>
+    /// Sets this InteractionToggle to the "toggled" state. Calling this function won't
+    /// oscillate the state of the toggle; to 'untoggle' the control, call Untoggle().
+    /// </summary>
+    public void Toggle() {
+      isToggled = true;
+    }
+
+    /// <summary>
+    /// Sets this InteractionToggle to the "untoggled" state.
+    /// </summary>
+    public void Untoggle() {
+      isToggled = false;
     }
   }
 }

@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -26,6 +26,9 @@ namespace Leap.Unity.Interaction {
 
     [Range(5F, 90F)]
     public float maxAngle = 60F;
+
+    [Range(0f, 1f)]
+    public float alwaysAttachDistance = 0f;
 
     [Header("Generated")]
     public Texture2D textureXY;
@@ -68,7 +71,7 @@ namespace Leap.Unity.Interaction {
                            + (dir1 * i * widthPerPixel - (dir1 * center))
                            + (dir2 * j * widthPerPixel - (dir2 * center));
 
-        float score = AnchorableBehaviour.GetAnchorScore(anchObjPos, anchObjVel, anchorPos, maxRange, maxRange / 2F, Mathf.Cos(maxAngle * Mathf.Deg2Rad));
+        float score = AnchorableBehaviour.GetAnchorScore(anchObjPos, anchObjVel, anchorPos, maxRange, maxRange * 0.40F, Mathf.Cos(maxAngle * Mathf.Deg2Rad), alwaysAttachDistance);
         Color pixel = Color.HSVToRGB(Mathf.Lerp(1F, 0F, score), Mathf.Lerp(0F, 1F, score), Mathf.Lerp(0F, 1F, score));
         _pixels[i + j * tex.width] = pixel;
       }

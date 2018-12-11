@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 114000010788191632}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -52,9 +52,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a58c35739ba08499c6e976ee4223ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  character: {fileID: 114000012522722070, guid: 4ba943236e1e12e4588a255815c2fce6,
+  character: {fileID: 114000012760188928, guid: 7f31cf473137d284ba9e425b019ea368,
     type: 2}
   transform: {fileID: 0}
+  capsulePrefab: {fileID: 1577597484497498, guid: f7ab372e0f5dd64469b7f7684d06159b,
+    type: 2}
+  hierarhy_capsulePrefab: {fileID: 0}
   lastCollider: {fileID: 0}
 --- !u!114 &114000013933806726
 MonoBehaviour:
