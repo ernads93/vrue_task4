@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -17,10 +17,10 @@ using UnityEngine;
 namespace Leap.Unity.Interaction {
 
   [CanEditMultipleObjects]
-  [CustomEditor(typeof(InteractionXRController), true)]
+  [CustomEditor(typeof(InteractionVRController), true)]
   public class InteractionVRControllerEditor : InteractionControllerEditor {
 
-    private List<InteractionXRController> _vrControllers;
+    private List<InteractionVRController> _vrControllers;
 
     bool _pluralPossibleControllers = false;
 
@@ -29,8 +29,8 @@ namespace Leap.Unity.Interaction {
 
       //_vrController = (target as InteractionVRController);
       _vrControllers = targets.Query()
-                              .Where(c => c is InteractionXRController)
-                              .Cast<InteractionXRController>()
+                              .Where(c => c is InteractionVRController)
+                              .Cast<InteractionVRController>()
                               .ToList();
       _pluralPossibleControllers = _vrControllers.Count > 1;
 
@@ -85,7 +85,7 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    private bool isGraspAxisConfigured(InteractionXRController controller) {
+    private bool isGraspAxisConfigured(InteractionVRController controller) {
       try {
         Input.GetAxis(controller.graspButtonAxis);
         return true;

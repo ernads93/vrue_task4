@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -41,7 +41,40 @@ namespace Leap.Unity.Interaction {
     }
 
     public override void OnInspectorGUI() {
+      checkForRigidHands();
+
       base.OnInspectorGUI();
+    }
+
+    private void checkForRigidHands() {
+      var rigidHandObjects = FindObjectsOfType<RigidHand>().Query().Select(x => x.gameObject).ToArray();
+      if (rigidHandObjects.Length != 0 && InteractionPreferences.shouldCheckForRigidHands) {
+        EditorGUILayout.BeginHorizontal();
+
+        EditorGUILayout.HelpBox("Rigid Hands are present in your scene. Rigid Hands are "
+                              + "not compatible with the Interaction Engine and should "
+                              + "never be used in tandem with it. You should remove them "
+                              + "from your scene.", MessageType.Error);
+
+        EditorGUILayout.BeginVertical();
+        if (GUILayout.Button(new GUIContent("Ignore", "Don't show this warning anymore."), GUILayout.ExpandHeight(true), GUILayout.MaxHeight(40F))) {
+          if (EditorUtility.DisplayDialog("Really ignore this warning?",
+                                          "Your interactions will not work correctly if "
+                                        + "Rigid Hands are enabled at the same time as "
+                                        + "Interaction Hands.",
+                                          "Yes, ignore this warning",
+                                          "Cancel")) {
+            InteractionPreferences.shouldCheckForRigidHands = false;
+          }
+        }
+
+        if (GUILayout.Button(new GUIContent("Select Rigid Hands", "Select RigidHand objects in the current scene."), GUILayout.ExpandHeight(true), GUILayout.MaxHeight(40F))) {
+          Selection.objects = rigidHandObjects;
+        }
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.EndHorizontal();
+      }
     }
 
     public override bool RequiresConstantRepaint() {
@@ -140,6 +173,8 @@ namespace Leap.Unity.Interaction {
 
       EditorGUILayout.BeginVertical();
 
+      _leftHand = null;
+      _rightHand = null;
       _leftVRNodeController = null;
       _rightVRNodeController = null;
       foreach (var controller in target.interactionControllers) {
@@ -186,8 +221,8 @@ namespace Leap.Unity.Interaction {
       if (controller.intHand != null) {
         checkInteractionHandStatus(controller.intHand, messages);
       }
-      else if (controller is InteractionXRController) {
-        checkInteractionVRControllerStatus(controller as InteractionXRController, messages);
+      else if (controller is InteractionVRController) {
+        checkInteractionVRControllerStatus(controller as InteractionVRController, messages);
       }
 
       // Render the status messages.
@@ -249,6 +284,8 @@ namespace Leap.Unity.Interaction {
     }
 
     private LeapProvider _provider = null;
+    private InteractionHand _leftHand = null;
+    private InteractionHand _rightHand = null;
 
     private void checkInteractionHandStatus(InteractionHand intHand,
                                             List<ControllerStatusMessage> messages) {
@@ -283,29 +320,27 @@ namespace Leap.Unity.Interaction {
       }
 
       // Check if the player has multiple left hands or multiple right hands.
-      if (intHand.handDataMode != HandDataMode.Custom) {
-        int index = target.interactionControllers.Query().IndexOf(intHand);
-
-        if (target.interactionControllers.Query().
-                                          Take(index).
-                                          OfType<InteractionHand>().
-                                          Where(h => h.handDataMode == intHand.handDataMode).
-                                          Where(h => h.leapProvider == intHand.leapProvider).
-                                          Any()) {
-          messages.Add(new ControllerStatusMessage() {
-            message = "Duplicate Hand",
-            tooltip = "You already have a hand with this data mode in your scene. "
-                    + "You should remove one of the duplicates.",
-            color = Colors.Problem
-          });
-        }
+      if (intHand.handDataMode == HandDataMode.PlayerLeft && _leftHand != null
+       || intHand.handDataMode == HandDataMode.PlayerRight && _rightHand != null) {
+        messages.Add(new ControllerStatusMessage() {
+          message = "Duplicate Hand",
+          tooltip = "You already have a hand with this data mode in your scene. "
+                  + "You should remove one of the duplicates.",
+          color = Colors.Problem
+        });
+      }
+      if (_leftHand == null && intHand.handDataMode == HandDataMode.PlayerLeft) {
+        _leftHand = intHand;
+      }
+      else if (_rightHand == null && intHand.handDataMode == HandDataMode.PlayerRight) {
+        _rightHand = intHand;
       }
     }
 
-    private InteractionXRController _leftVRNodeController;
-    private InteractionXRController _rightVRNodeController;
+    private InteractionVRController _leftVRNodeController;
+    private InteractionVRController _rightVRNodeController;
 
-    private void checkInteractionVRControllerStatus(InteractionXRController controller,
+    private void checkInteractionVRControllerStatus(InteractionVRController controller,
                                                     List<ControllerStatusMessage> messages) {
       // Check if the controller is configured correctly if it is set up with a custom
       // tracking provider.
@@ -318,9 +353,9 @@ namespace Leap.Unity.Interaction {
       }
 
       // Check if the player has duplicate VRNode left controllers or right controllers.
-      bool isLeftVRNodeController  = controller.trackingProvider is DefaultXRNodeTrackingProvider
+      bool isLeftVRNodeController  = controller.trackingProvider is DefaultVRNodeTrackingProvider
                                   && controller.chirality == Chirality.Left;
-      bool isRightVRNodeController = controller.trackingProvider is DefaultXRNodeTrackingProvider
+      bool isRightVRNodeController = controller.trackingProvider is DefaultVRNodeTrackingProvider
                                   && controller.chirality == Chirality.Right;
 
       if (isLeftVRNodeController && _leftVRNodeController != null

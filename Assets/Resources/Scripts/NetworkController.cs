@@ -9,12 +9,6 @@ public class NetworkController : NetworkManager
     public bool host;
     public bool server;
 
-    public GameObject boxPrefab;
-    public GameObject hierarchy;
-    private Vector3[] boxPositions = { new Vector3 { x = 0.3f, y = 1.0f, z = 0.0f }, 
-                                       new Vector3 { x = 0.0f, y = 1.0f, z = 0.0f }, 
-                                       new Vector3 { x = -0.3f, y = 1.0f, z = 0.0f} };
-    
     public static NetworkController FindInstance()
     {
         return FindObjectOfType<NetworkController>();
@@ -35,7 +29,7 @@ public class NetworkController : NetworkManager
 
         if(server)
         {
-            StartServer(); 
+            StartServer();
         }
         else if(host)
         {
@@ -51,7 +45,7 @@ public class NetworkController : NetworkManager
     // overriden functions implement only base functionality; however, additional functionality can be implemented here
     public override void OnStartServer()
     {
-        base.OnStartServer();  
+        base.OnStartServer();
     }
 
     public override void OnStartHost()
@@ -64,28 +58,5 @@ public class NetworkController : NetworkManager
         base.OnStartClient(client);
     }
 
-    public override void OnClientConnect(NetworkConnection conn)
-    {
-        base.OnClientConnect(conn);
-
-        //SpawnBoxes();
-    }
-    private void SpawnBoxes() {
-
-        for (int i = 0; i < 3; i++) {
-            // Create the Box from the Box Prefab
-            var box = (GameObject)Instantiate(
-                boxPrefab,
-                boxPositions[i],
-                Quaternion.identity);
-
-            //set parent to avoid creating boxes on the root level
-            box.transform.parent = hierarchy.transform;
-
-            // Spawn the box on the Clients
-            NetworkServer.Spawn(box);
-        }
-
-    }
 }
 

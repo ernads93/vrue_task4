@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 using Leap.Unity.Attributes;
+using System.Collections.Generic;
 using System;
 
 namespace Leap.Unity.Interaction {
@@ -20,8 +21,6 @@ namespace Leap.Unity.Interaction {
   /// Increasing the horizontal and vertical slide limits allows it to act as either a 1D or 2D slider.
   ///</summary>
   public class InteractionSlider : InteractionButton {
-
-    #region Inspector & Properties
 
     public enum SliderType {
       Vertical,
@@ -46,32 +45,7 @@ namespace Leap.Unity.Interaction {
     public float defaultHorizontalValue;
 
     [Tooltip("The minimum and maximum values that the slider reports on the horizontal axis.")]
-    [FormerlySerializedAs("horizontalValueRange")]
-    [SerializeField]
-    private Vector2 _horizontalValueRange = new Vector2(0f, 1f);
-    public float minHorizontalValue {
-      get {
-        return _horizontalValueRange.x;
-      }
-      set {
-        if (value != _horizontalValueRange.x) {
-          _horizontalValueRange.x = value;
-          HorizontalSlideEvent(HorizontalSliderValue);
-        }
-      }
-    }
-
-    public float maxHorizontalValue {
-      get {
-        return _horizontalValueRange.y;
-      }
-      set {
-        if (value != _horizontalValueRange.y) {
-          _horizontalValueRange.y = value;
-          HorizontalSlideEvent(HorizontalSliderValue);
-        }
-      }
-    }
+    public Vector2 horizontalValueRange = new Vector2(0f, 1f);
 
     [Tooltip("The minimum and maximum horizontal extents that the slider can slide to in world space.")]
     [MinMax(-0.5f, 0.5f)]
@@ -94,32 +68,7 @@ namespace Leap.Unity.Interaction {
     public float defaultVerticalValue;
 
     [Tooltip("The minimum and maximum values that the slider reports on the horizontal axis.")]
-    [FormerlySerializedAs("verticalValueRange")]
-    [SerializeField]
-    private Vector2 _verticalValueRange = new Vector2(0f, 1f);
-    public float minVerticalValue {
-      get {
-        return _verticalValueRange.x;
-      }
-      set {
-        if (value != _verticalValueRange.x) {
-          _verticalValueRange.x = value;
-          VerticalSlideEvent(VerticalSliderValue);
-        }
-      }
-    }
-
-    public float maxVerticalValue {
-      get {
-        return _verticalValueRange.y;
-      }
-      set {
-        if (value != _verticalValueRange.y) {
-          _verticalValueRange.y = value;
-          VerticalSlideEvent(VerticalSliderValue);
-        }
-      }
-    }
+    public Vector2 verticalValueRange = new Vector2(0f, 1f);
 
     [MinMax(-0.5f, 0.5f)]
     [Tooltip("The minimum and maximum vertical extents that the slider can slide to in world space.")]
@@ -176,101 +125,29 @@ namespace Leap.Unity.Interaction {
     ///<summary> This slider's horizontal slider value, mapped between the values in the HorizontalValueRange. </summary>
     public float HorizontalSliderValue {
       get {
-        return Mathf.Lerp(_horizontalValueRange.x, _horizontalValueRange.y, _horizontalSliderPercent);
+        return Mathf.Lerp(horizontalValueRange.x, horizontalValueRange.y, _horizontalSliderPercent);
       }
       set {
-        HorizontalSliderPercent = Mathf.InverseLerp(_horizontalValueRange.x, _horizontalValueRange.y, value);
+        HorizontalSliderPercent = Mathf.InverseLerp(horizontalValueRange.x, horizontalValueRange.y, value);
       }
     }
 
     ///<summary> This slider's current vertical slider value, mapped between the values in the VerticalValueRange. </summary>
     public float VerticalSliderValue {
       get {
-        return Mathf.Lerp(_verticalValueRange.x, _verticalValueRange.y, _verticalSliderPercent);
+        return Mathf.Lerp(verticalValueRange.x, verticalValueRange.y, _verticalSliderPercent);
       }
       set {
-        VerticalSliderPercent = Mathf.InverseLerp(_verticalValueRange.x, _verticalValueRange.y, value);
+        VerticalSliderPercent = Mathf.InverseLerp(verticalValueRange.x, verticalValueRange.y, value);
       }
     }
 
-    private void calculateSliderValues() {
-      // Calculate renormalized slider values.
-      if (horizontalSlideLimits.x != horizontalSlideLimits.y) {
-        _horizontalSliderPercent = Mathf.InverseLerp(initialLocalPosition.x + horizontalSlideLimits.x, initialLocalPosition.x + horizontalSlideLimits.y, localPhysicsPosition.x);
-        HorizontalSlideEvent(HorizontalSliderValue);
-      }
-
-      if (verticalSlideLimits.x != verticalSlideLimits.y) {
-        _verticalSliderPercent = Mathf.InverseLerp(initialLocalPosition.y + verticalSlideLimits.x, initialLocalPosition.y + verticalSlideLimits.y, localPhysicsPosition.y);
-        VerticalSlideEvent(VerticalSliderValue);
-      }
-    }
-
-    public float normalizedHorizontalValue {
-      get {
-        return _horizontalSliderPercent;
-      }
-      set {
-        var newValue = Mathf.Clamp01(value);
-        if (newValue != _horizontalSliderPercent) {
-          _horizontalSliderPercent = newValue;
-          HorizontalSlideEvent(HorizontalSliderValue);
-        }
-      }
-    }
-
-    public float normalizedVerticalValue {
-      get {
-        return _verticalSliderPercent;
-      }
-      set {
-        var newValue = Mathf.Clamp01(value);
-        if (newValue != _verticalSliderPercent) {
-          _verticalSliderPercent = newValue;
-          VerticalSlideEvent(VerticalSliderValue);
-        }
-      }
-    }
-
-    /// <summary>
-    /// Returns the number of horizontal steps past the minimum value of the slider, for
-    /// sliders with a non-zero number of horizontal steps. This value is independent of
-    /// the horizontal value range of the slider. For example a slider with a
-    /// horizontalSteps value of 9 could have horizontalStepValues of 0-9.
-    /// </summary>
-    public int horizontalStepValue {
-      get {
-        float range = _horizontalValueRange.y - _horizontalValueRange.x;
-        if (range == 0F) return 0;
-        else {
-          return (int)(_horizontalSliderPercent * horizontalSteps * 1.001F);
-        }
-      }
-    }
-
-    /// <summary>
-    /// Gets whether the slider was slide in the latest Update().
-    /// </summary>
-    public bool wasSlid {
-      get { return _wasSlid && _sawWasSlid; }
-    }
-
-    #endregion
-
-    #region Internal State
-
+    //Internal Slider Values
     protected float _horizontalSliderPercent;
     protected float _verticalSliderPercent;
     protected RectTransform parent;
 
     private bool _started = false;
-
-    private bool _sawWasSlid = false;
-    private bool _wasSlid = false;
-
-    #endregion
-
-    #region Unity Events
 
     protected override void OnValidate() {
       base.OnValidate();
@@ -281,18 +158,6 @@ namespace Leap.Unity.Interaction {
       else {
         _parentHasRectTransform = false;
       }
-    }
-
-    protected override void OnEnable() {
-      base.OnEnable();
-
-      OnContactStay += calculateSliderValues;
-    }
-
-    protected override void OnDisable() {
-      OnContactStay -= calculateSliderValues;
-
-      base.OnDisable();
     }
 
     protected override void Start() {
@@ -314,10 +179,7 @@ namespace Leap.Unity.Interaction {
       base.Start();
 
       HorizontalSlideEvent += _horizontalSlideEvent.Invoke;
-      VerticalSlideEvent   += _verticalSlideEvent.Invoke;
-
-      HorizontalSlideEvent += (f) => { _wasSlid = true; };
-      VerticalSlideEvent   += (f) => { _wasSlid = true; };
+      VerticalSlideEvent += _verticalSlideEvent.Invoke;
 
       HorizontalSliderValue = defaultHorizontalValue;
       VerticalSliderValue = defaultVerticalValue;
@@ -328,39 +190,9 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    protected override void Update() {
-      base.Update();
-
-      if (!Application.isPlaying) { return; }
-
-      if (isPressed || isGrasped) {
-        calculateSliderValues();
-      }
-
-      // Whenever "_wasSlid" is set to true (however many times between Update() cycles),
-      // this logic produces a single Update() cycle through which slider.wasSlid
-      // will return true. (This allows observing MonoBehaviours to simply check
-      // "wasSlid" during their Update() cycle to perform updating logic.)
-      if (_wasSlid && !_sawWasSlid) {
-        _sawWasSlid = true;
-      }
-      else if (_sawWasSlid) {
-        _wasSlid = false;
-        _sawWasSlid = false;
-      }
-    }
-
-    #endregion
-
-    #region Public API
-
     public void RecalculateSliderLimits() {
       calculateSliderLimits();
     }
-
-    #endregion
-
-    #region Internal Methods
 
     private void calculateSliderLimits() {
       if (transform.parent != null) {
@@ -405,7 +237,70 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    protected override Vector3 constrainDepressedLocalPosition(Vector3 desiredOffset) {
+    protected override void Update() {
+      base.Update();
+
+      if (!Application.isPlaying) { return; }
+
+      if (isDepressed || isGrasped) {
+        calculateSliderValues();
+      }
+    }
+
+    protected override void OnEnable() {
+      base.OnEnable();
+
+      OnContactStay += calculateSliderValues;
+    }
+
+    protected override void OnDisable() {
+      OnContactStay -= calculateSliderValues;
+
+      base.OnDisable();
+    }
+
+    private void calculateSliderValues() {
+      // Calculate renormalized slider values.
+      if (horizontalSlideLimits.x != horizontalSlideLimits.y) {
+        _horizontalSliderPercent = Mathf.InverseLerp(initialLocalPosition.x + horizontalSlideLimits.x, initialLocalPosition.x + horizontalSlideLimits.y, localPhysicsPosition.x);
+        HorizontalSlideEvent(HorizontalSliderValue);
+      }
+
+      if (verticalSlideLimits.x != verticalSlideLimits.y) {
+        _verticalSliderPercent = Mathf.InverseLerp(initialLocalPosition.y + verticalSlideLimits.x, initialLocalPosition.y + verticalSlideLimits.y, localPhysicsPosition.y);
+        VerticalSlideEvent(VerticalSliderValue);
+      }
+    }
+
+    public float normalizedHorizontalValue {
+      get {
+        return _horizontalSliderPercent;
+      }
+    }
+
+    public float normalizedVerticalValue {
+      get {
+        return _verticalSliderPercent;
+      }
+    }
+
+    /// <summary>
+    /// Returns the number of horizontal steps past the minimum value of the slider, for
+    /// sliders with a non-zero number of horizontal steps. This value is independent of
+    /// the horizontal value range of the slider. For example a slider with a
+    /// horizontalSteps value of 9 could have horizontalStepValues of 0-9.
+    /// </summary>
+    public int horizontalStepValue {
+      get {
+        float range = horizontalValueRange.y - horizontalValueRange.x;
+        if (range == 0F) return 0;
+        else {
+          return (int)(_horizontalSliderPercent * horizontalSteps * 1.001F);
+        }
+      }
+    }
+
+    protected override Vector3 getDepressedConstrainedLocalPosition(Vector3 desiredOffset) {
       Vector3 unSnappedPosition =
         new Vector3(Mathf.Clamp((localPhysicsPosition.x + desiredOffset.x), initialLocalPosition.x + horizontalSlideLimits.x, initialLocalPosition.x + horizontalSlideLimits.y),
                     Mathf.Clamp((localPhysicsPosition.y + desiredOffset.y), initialLocalPosition.y + verticalSlideLimits.x, initialLocalPosition.y + verticalSlideLimits.y),
@@ -425,10 +320,6 @@ namespace Leap.Unity.Interaction {
                          Mathf.Lerp(initialLocalPosition.y + verticalSlideLimits.x, initialLocalPosition.y + verticalSlideLimits.y, vSliderPercent),
                                    (localPhysicsPosition.z + desiredOffset.z));
     }
-
-    #endregion
-
-    #region Gizmos
 
     protected override void OnDrawGizmosSelected() {
       base.OnDrawGizmosSelected();
@@ -474,7 +365,5 @@ namespace Leap.Unity.Interaction {
         }
       }
     }
-
-    #endregion
   }
 }

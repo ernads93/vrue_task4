@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using Valve.VR.InteractionSystem;
-using Leap.Unity;
-using Leap.Unity.Interaction;
+
 // TODO: define the behaviour of a shared object when it is manipulated by a client
 
 public class OnGrabbedBehaviour : MonoBehaviour
@@ -10,7 +9,6 @@ public class OnGrabbedBehaviour : MonoBehaviour
 
 
     bool grabbed;
-    bool left;
 
     public bool vive { get; set; }
     public bool leap { get; set; } 
@@ -35,30 +33,21 @@ public class OnGrabbedBehaviour : MonoBehaviour
                 Character character = actor.GetComponentInChildren<Character>();
 
                 // midpoint between left/right character hands              
-                transform.position = character.left.position;//(character.left.position + character.right.position) / 2;
-                
-                setGravityFalse();
+                transform.position = (character.left.position + character.right.position) / 2;
+
+                GetComponent<Rigidbody>().useGravity = false;
             }                
             //gameObject.GetComponent<Renderer>().material.color = Color.blue;         
            
         }
         if (!grabbed)
         {
-            setGravityTrue();
+            GetComponent<Rigidbody>().useGravity = true;
             // gameObject.transform.SetParent(null);
             //  gameObject.GetComponent<Renderer>().material.color = Color.green;
         }
 
 
-    }
-
-
-    public void setGravityFalse() {
-        GetComponent<Rigidbody>().useGravity = false;
-    }
-
-    public void setGravityTrue() {
-        GetComponent<Rigidbody>().useGravity = true;
     }
 
     public void setColor(Color c)
@@ -69,11 +58,6 @@ public class OnGrabbedBehaviour : MonoBehaviour
     public void setActor(Actor ac)
     {
         actor = ac;
-    }
-
-    public void grabbedByLeft(bool state)
-    {
-        left = state;
     }
     // called first time when the GO gets grabbed by a player
     public void OnGrabbed()

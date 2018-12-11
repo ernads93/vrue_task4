@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -24,11 +24,6 @@ namespace Leap.Unity.Interaction {
 
   [DisallowMultipleComponent]
   public class InteractionHand : InteractionController {
-
-    #region Inspector
-
-    [SerializeField]
-    private LeapProvider _leapProvider;
 
     [Header("Hand Configuration")]
 
@@ -54,9 +49,7 @@ namespace Leap.Unity.Interaction {
     /// </summary>
     public bool[] enabledPrimaryHoverFingertips = new bool[5] { true, true, true, false, false };
 
-    #endregion
-
-    #region Hand Data
+    private LeapProvider _leapProvider;
     /// <summary>
     /// If the hand data mode for this InteractionHand is set to Custom, you must also
     /// manually specify the provider from which to retrieve Leap frames containing
@@ -104,10 +97,6 @@ namespace Leap.Unity.Interaction {
     /// Will be null when not tracked, otherwise contains the same data as _handData.
     /// </summary>
     private Hand _hand;
-
-    #endregion
-
-    #region Unity Events
 
     protected override void Reset() {
       base.Reset();
@@ -180,12 +169,6 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    private void OnDestroy() {
-      if (_leapProvider != null) {
-        _leapProvider.OnFixedFrame -= onProviderFixedFrame;
-      }
-    }
-
     private void onProviderFixedFrame(Leap.Frame frame) {
       _hand = handAccessorFunc(frame);
 
@@ -198,8 +181,6 @@ namespace Leap.Unity.Interaction {
       }
 
     }
-
-    #endregion
 
     #region General InteractionController Implementation
 
@@ -242,24 +223,10 @@ namespace Leap.Unity.Interaction {
     }
 
     /// <summary>
-    /// Gets the last-tracked position of the underlying Leap hand.
-    /// </summary>
-    public override Vector3 position {
-      get { return _handData.PalmPosition.ToVector3(); }
-    }
-
-    /// <summary>
-    /// Gets the last-tracked rotation of the underlying Leap hand.
-    /// </summary>
-    public override Quaternion rotation {
-      get { return _handData.Rotation.ToQuaternion(); }
-    }
-
-    /// <summary>
     /// Gets the velocity of the underlying tracked Leap hand.
     /// </summary>
     public override Vector3 velocity {
-      get { return isTracked ? leapHand.PalmVelocity.ToVector3() : Vector3.zero; }
+      get { return isTracked ? Vector3.zero : leapHand.PalmVelocity.ToVector3(); }
     }
 
     /// <summary>
@@ -390,11 +357,9 @@ namespace Leap.Unity.Interaction {
     protected override void getColliderBoneTargetPositionRotation(int contactBoneIndex,
                                                                   out Vector3 targetPosition,
                                                                   out Quaternion targetRotation) {
-      using (new ProfilerSample("InteractionHand: getColliderBoneTargetPositionRotation")) {
-        _handContactBoneMapFunctions[contactBoneIndex](_unwarpedHandData,
-                                                       out targetPosition,
-                                                       out targetRotation);
-      }
+      _handContactBoneMapFunctions[contactBoneIndex](_unwarpedHandData,
+                                                     out targetPosition,
+                                                     out targetRotation);
     }
 
     protected override bool initContact() {
@@ -548,29 +513,16 @@ namespace Leap.Unity.Interaction {
 
     /// <summary> Reconnects and resets all the joints in the hand. </summary>
     private void resetContactBoneJoints() {
-      // If contact bones array is null, there's nothing to reset. This can happen if
-      // the controller is disabled before it had a chance to initialize contact.
-      if (_contactBones == null) return;
-
       // If the palm contact bone is null, we can't reset bone joints.
       if (_contactBones[NUM_FINGERS * BONES_PER_FINGER] == null) return;
 
       _contactBones[NUM_FINGERS * BONES_PER_FINGER].transform.position = _unwarpedHandData.PalmPosition.ToVector3();
       _contactBones[NUM_FINGERS * BONES_PER_FINGER].transform.rotation = _unwarpedHandData.Rotation.ToQuaternion();
-      _contactBones[NUM_FINGERS * BONES_PER_FINGER].rigidbody.velocity = Vector3.zero;
-      _contactBones[NUM_FINGERS * BONES_PER_FINGER].rigidbody.angularVelocity = Vector3.zero;
 
       for (int fingerIndex = 0; fingerIndex < NUM_FINGERS; fingerIndex++) {
         for (int jointIndex = 0; jointIndex < BONES_PER_FINGER; jointIndex++) {
           Bone bone = _unwarpedHandData.Fingers[fingerIndex].Bone((Bone.BoneType)(jointIndex) + 1); // +1 to skip first bone.
           int boneArrayIndex = fingerIndex * BONES_PER_FINGER + jointIndex;
-
-          _contactBones[boneArrayIndex].transform.position = bone.Center.ToVector3();
-          _contactBones[boneArrayIndex].transform.rotation = bone.Rotation.ToQuaternion();
-          _contactBones[boneArrayIndex].rigidbody.position = bone.Center.ToVector3();
-          _contactBones[boneArrayIndex].rigidbody.rotation = bone.Rotation.ToQuaternion();
-          _contactBones[boneArrayIndex].rigidbody.velocity = Vector3.zero;
-          _contactBones[boneArrayIndex].rigidbody.angularVelocity = Vector3.zero;
 
           if (jointIndex != 0 && _contactBones[boneArrayIndex].joint != null) {
             Bone prevBone = _unwarpedHandData.Fingers[fingerIndex].Bone((Bone.BoneType)(jointIndex));
@@ -689,43 +641,12 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    /// <summary>
-    /// Attempts to manually initiate a grasp on the argument interaction object. A grasp
-    /// will only begin if a finger and thumb are both in contact with the interaction
-    /// object. If this method successfully initiates a grasp, it will return true,
-    /// otherwise it will return false.
-    /// </summary>
-    protected override bool checkShouldGraspAtemporal(IInteractionBehaviour intObj) {
-      if (grabClassifier.TryGrasp(intObj, leapHand)) {
-        var tempControllers = Pool<List<InteractionController>>.Spawn();
-        try {
-          tempControllers.Add(this);
-          intObj.BeginGrasp(tempControllers);
-          return true;
-        }
-        finally {
-          tempControllers.Clear();
-          Pool<List<InteractionController>>.Recycle(tempControllers);
-        }
-      }
-
-      return false;
-    }
-
-    public override void SwapGrasp(IInteractionBehaviour replacement) {
-      var original = graspedObject;
-
-      base.SwapGrasp(replacement);
-
-      grabClassifier.SwapClassifierState(original, replacement);
-    }
-
     protected override void fixedUpdateGraspingState() {
       grabClassifier.FixedUpdateClassifierHandState();
     }
 
     protected override void onGraspedObjectForciblyReleased(IInteractionBehaviour objectToBeReleased) {
-      grabClassifier.NotifyGraspForciblyReleased(objectToBeReleased);
+      grabClassifier.NotifyGraspReleased(objectToBeReleased);
     }
 
     protected override bool checkShouldRelease(out IInteractionBehaviour objectToRelease) {
@@ -755,7 +676,8 @@ namespace Leap.Unity.Interaction {
         }
 
         if (_testHand == null && provider != null) {
-          _testHand = provider.MakeTestHand(this.isLeft);
+          _testHand = TestHandFactory.MakeTestHand(this.isLeft, 0, 0)
+                                     .TransformedCopy(UnityMatrixExtension.GetLeapMatrix(provider.transform));
         }
 
         // Hover Point

@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -21,7 +21,7 @@ namespace Leap.Unity.Interaction {
 
     public override void OnInspectorGUI() {
       checkParentedToManager();
-      checkWithinHandModelManager();
+      checkWithinHandPoolParent();
       checkPrimaryHoverPoints();
 
       base.OnInspectorGUI();
@@ -86,15 +86,16 @@ namespace Leap.Unity.Interaction {
       }
     }
 
-    private void checkWithinHandModelManager() {
+    private void checkWithinHandPoolParent() {
       bool plural = targets.Length > 1;
       bool anyWithinHandPool;
 
-      HandModelManager handModelManager = FindObjectOfType<HandModelManager>();
-      if (handModelManager == null) return;
+      HandModelManager  handPool = FindObjectOfType<HandModelManager>();
+      if (handPool == null) return;
 
       anyWithinHandPool = targets.Query()
-                                 .Any(c => c.transform.parent == handModelManager.transform);
+                                 .Any(c => c.transform.parent == handPool.transform.parent
+                                        && handPool.transform.parent != null);
 
       if (anyWithinHandPool) {
         string message = "";
@@ -105,10 +106,10 @@ namespace Leap.Unity.Interaction {
           message += "The currently selected controller ";
         }
 
-        message += "is inside a HandModelManager. Interaction controllers, such "
+        message += "is a within the HandPool model parent. Interaction controllers, such "
                  + "as InteractionHands, are not HandModels and are not spawned by the "
-                 + "HandModelManager. InteractionHands and all Interaction controllers "
-                 + "should be childed to the Interaction Manager.";
+                 + "HandPool. InteractionHands and all Interaction controllers should "
+                 + "be childed to the Interaction Manager.";
 
         EditorGUILayout.HelpBox(message, MessageType.Error);
       }

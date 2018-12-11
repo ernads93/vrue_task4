@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -156,7 +156,7 @@ namespace Leap.Unity.Examples {
       }
     }
 
-    private void onPostObjectGraspEnd() {
+    private void onPostObjectGraspEnd(AnchorableBehaviour anchObj) {
       if (_anchObj.preferredAnchor == null) {
         // Choose a good position and rotation for workstation mode and begin traveling there.
         Vector3 targetPosition;

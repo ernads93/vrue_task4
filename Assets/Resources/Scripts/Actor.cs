@@ -14,9 +14,6 @@ public class Actor : NetworkBehaviour
     private bool vive;
     private bool leap;
 
-    public GameObject capsulePrefab;
-    public GameObject hierarhy_capsulePrefab;
-
     public bool leapStatus
     {
         get { return leap; }
@@ -252,27 +249,6 @@ public class Actor : NetworkBehaviour
     }
     //*******************************
 
-    public void CallObjectCreate() {
-        print("call object create");
-        CmdCreateObject(1);
-    }
-    
-    [Command]
-    void CmdCreateObject(int bla) {
-
-        Vector3 spawnPos = (character.left.position + character.right.position) / 2.0f;
-        hierarhy_capsulePrefab = GameObject.FindGameObjectWithTag("spawnPlace");
-
-        // Create the Box from the Box Prefab
-        var box = (GameObject)Instantiate(capsulePrefab,spawnPos, Quaternion.identity);
-
-        //set parent to avoid creating boxes on the root level
-        box.transform.parent = hierarhy_capsulePrefab.transform;
-
-        // Spawn the box on the Clients
-        NetworkServer.Spawn(box);
-    }
-
     public void TouchLeft(bool state)
     {
         tl.SetLeftHandTouch(state);
@@ -286,15 +262,16 @@ public class Actor : NetworkBehaviour
     }
 
     public void AssignLastCollider(NetworkIdentity other)
-    {        
+    {
+
         if (lastCollider == null)
         {
             lastCollider = other;            
         }
-/*       else
+        else
         {   // iff ids are different, hand are touching different boxes
             //print((lastCollider.netId==other.netId)  + "lastcollier id: " + lastCollider.netId + " newly id: " + other.netId);
             lastCollider = (lastCollider.netId == other.netId) ? other : null;
-        }*/
+        }
     }
 }

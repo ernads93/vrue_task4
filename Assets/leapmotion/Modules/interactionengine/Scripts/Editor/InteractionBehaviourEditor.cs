@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -34,7 +34,8 @@ namespace Leap.Unity.Interaction {
       specifyConditionalDrawing(() => !targets.Query().All(intObj => intObj.ignoreGrasping),
                                 "_allowMultiGrasp",
                                 "_moveObjectWhenGrasped",
-                                "graspedMovementType");
+                                "graspedMovementType",
+                                "graspHoldWarpingEnabled__curIgnored");
 
       // Layer Overrides
       specifyConditionalDrawing(() => targets.Query().Any(intObj => intObj.overrideInteractionLayer),

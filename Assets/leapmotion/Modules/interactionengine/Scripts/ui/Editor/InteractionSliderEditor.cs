@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -33,7 +33,7 @@ namespace Leap.Unity.Interaction {
                                           || slider.sliderType == InteractionSlider.SliderType.TwoDimensional);
       },
                                 "defaultVerticalValue",
-                                "_verticalValueRange",
+                                "verticalValueRange",
                                 "verticalSlideLimits",
                                 "verticalSteps",
                                 "_verticalSlideEvent");
@@ -42,7 +42,7 @@ namespace Leap.Unity.Interaction {
                                           || slider.sliderType == InteractionSlider.SliderType.TwoDimensional);
       },
                                 "defaultHorizontalValue",
-                                "_horizontalValueRange",
+                                "horizontalValueRange",
                                 "horizontalSlideLimits",
                                 "horizontalSteps",
                                 "_horizontalSlideEvent");

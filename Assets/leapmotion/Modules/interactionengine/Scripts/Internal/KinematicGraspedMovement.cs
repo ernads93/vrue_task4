@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -24,12 +24,14 @@ namespace Leap.Unity.Interaction {
 
     public void MoveTo(Vector3 solvedPosition, Quaternion solvedRotation,
                        InteractionBehaviour interactionObj, bool justGrasped) {
-      interactionObj.rigidbody.MovePosition(solvedPosition);
-      interactionObj.rigidbody.MoveRotation(solvedRotation);
-
-      // Store the target position and rotation to prevent slippage in SwapGrasp
-      // scenarios.
-      interactionObj.latestScheduledGraspPose = new Pose(solvedPosition, solvedRotation);
+      //interactionObj.rigidbody.MovePosition(solvedPosition);
+      //interactionObj.rigidbody.MoveRotation(solvedRotation);
+      interactionObj.rigidbody.transform.position = solvedPosition;
+      interactionObj.rigidbody.transform.rotation = solvedRotation;
+      interactionObj.rigidbody.position = solvedPosition;
+      interactionObj.rigidbody.rotation = solvedRotation;
     }
+
   }
+
 }

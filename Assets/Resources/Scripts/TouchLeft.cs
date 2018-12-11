@@ -19,7 +19,6 @@ public class TouchLeft : MonoBehaviour
     {
        leapGrab = GetComponentInParent<LeapGrab>();
     }
-
     public void SetLeftHandTouch(bool state)
     {
         if (leapGrab == null)

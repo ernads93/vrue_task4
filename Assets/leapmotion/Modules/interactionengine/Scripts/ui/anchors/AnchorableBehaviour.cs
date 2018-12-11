@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
- * Leap Motion proprietary and confidential.                                  *
+ * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
+ * Leap Motion proprietary and  confidential.                                 *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -38,7 +38,7 @@ namespace Leap.Unity.Interaction {
             if (_anchor != null) {
               _isAttached = value;
               _anchor.NotifyAttached(this);
-              OnAttachedToAnchor.Invoke();
+              OnAttachedToAnchor.Invoke(this, _anchor);
             }
             else {
               Debug.LogWarning("Tried to attach an anchorable behaviour, but it has no assigned anchor.", this.gameObject);
@@ -49,7 +49,7 @@ namespace Leap.Unity.Interaction {
             _isLockedToAnchor = false;
             _isRotationLockedToAnchor = false;
 
-            OnDetachedFromAnchor.Invoke();
+            OnDetachedFromAnchor.Invoke(this, _anchor);
             _anchor.NotifyDetached(this);
 
             _hasTargetPositionLastUpdate = false;
@@ -78,7 +78,7 @@ namespace Leap.Unity.Interaction {
         if (_anchor != value) {
           if (IsValidAnchor(value)) {
             if (_anchor != null) {
-              OnDetachedFromAnchor.Invoke();
+              OnDetachedFromAnchor.Invoke(this, _anchor);
               _anchor.NotifyDetached(this);
             }
 
@@ -148,12 +148,6 @@ namespace Leap.Unity.Interaction {
     private float _maxAttachmentAngle = 60F;
     /// <summary> Calculated via _maxAttachmentAngle. </summary>
     private float _minAttachmentDotProduct;
-
-    [Tooltip("Always attach an anchor if there is one within this distance, regardless "
-           + "of trajectory.")]
-    [SerializeField]
-    [MinValue(0f)]
-    private float _alwaysAttachDistance = 0f;
 
     [Header("Motion")]
 
@@ -242,37 +236,37 @@ namespace Leap.Unity.Interaction {
     /// <summary>
     /// Called when this AnchorableBehaviour attaches to an Anchor.
     /// </summary>
-    public Action OnAttachedToAnchor = () => { };
+    public Action<AnchorableBehaviour, Anchor> OnAttachedToAnchor = (anchObj, anchor) => { };
 
     /// <summary>
     /// Called when this AnchorableBehaviour locks to an Anchor.
     /// </summary>
-    public Action OnLockedToAnchor = () => { };
+    public Action<AnchorableBehaviour, Anchor> OnLockedToAnchor = (anchObj, anchor) => { };
 
     /// <summary>
     /// Called when this AnchorableBehaviour detaches from an Anchor.
     /// </summary>
-    public Action OnDetachedFromAnchor = () => { };
+    public Action<AnchorableBehaviour, Anchor> OnDetachedFromAnchor = (anchObj, anchor) => { };
 
     /// <summary>
     /// Called during every Update() in which this AnchorableBehaviour is attached to an Anchor.
     /// </summary>
-    public Action WhileAttachedToAnchor = () => { };
+    public Action<AnchorableBehaviour, Anchor> WhileAttachedToAnchor = (anchObj, anchor) => { };
 
     /// <summary>
     /// Called during every Update() in which this AnchorableBehaviour is locked to an Anchor.
     /// </summary>
-    public Action WhileLockedToAnchor = () => { };
+    public Action<AnchorableBehaviour, Anchor> WhileLockedToAnchor = (anchObj, anchor) => { };
 
     /// <summary>
     /// Called just after this anchorable behaviour's InteractionBehaviour OnObjectGraspEnd for
     /// this anchor. This callback will never fire if tryAttachAnchorOnGraspEnd is not enabled.
     ///
     /// If tryAttachAnchorOnGraspEnd is enabled, the anchor will be attached to
-    /// an anchor only if its preferredAnchor property is non-null; otherwise, the
-    /// attempt to anchor failed.
+    /// an anchor only if its preferredAnchor property is false; otherwise, the attempt to
+    /// anchor failed.
     /// </summary>
-    public Action OnPostTryAnchorOnGraspEnd = () => { };
+    public Action<AnchorableBehaviour> OnPostTryAnchorOnGraspEnd = (anchObj) => { };
 
     #endregion
 
@@ -312,7 +306,7 @@ namespace Leap.Unity.Interaction {
     void Start() {
       if (anchor != null && _isAttached) {
         anchor.NotifyAttached(this);
-        OnAttachedToAnchor();
+        OnAttachedToAnchor(this, anchor);
       }
     }
 
@@ -331,14 +325,12 @@ namespace Leap.Unity.Interaction {
         }
 
         updateAnchorAttachment();
-        if (anchorRotation) {
-          updateAnchorAttachmentRotation();
-        }
+        updateAnchorAttachmentRotation();
 
-        WhileAttachedToAnchor.Invoke();
+        WhileAttachedToAnchor.Invoke(this, anchor);
 
         if (_isLockedToAnchor) {
-          WhileLockedToAnchor.Invoke();
+          WhileLockedToAnchor.Invoke(this, anchor);
         }
       }
 
@@ -504,18 +496,8 @@ namespace Leap.Unity.Interaction {
       Anchor closestAnchor = null;
       float closestDistSqrd = float.PositiveInfinity;
       foreach (var testAnchor in anchorsToCheck) {
-        if (requireAnchorHasSpace) {
-          bool anchorHasSpace = testAnchor.anchoredObjects.Count == 0
-                                || testAnchor.allowMultipleObjects;
-          if (!anchorHasSpace) {
-            // Skip the anchor for consideration.
-            continue;
-          }
-        }
-        if (requireAnchorActiveAndEnabled && !testAnchor.isActiveAndEnabled) {
-          // Skip the anchor for consideration.
-          continue;
-        }
+        if ((requireAnchorHasSpace && (!anchor.allowMultipleObjects || anchor.anchoredObjects.Count == 0))
+            || (requireAnchorActiveAndEnabled && !anchor.isActiveAndEnabled)) continue;
 
         float testDistanceSqrd = (testAnchor.transform.position - this.transform.position).sqrMagnitude;
         if (testDistanceSqrd < closestDistSqrd) {
@@ -572,8 +554,7 @@ namespace Leap.Unity.Interaction {
                             anchor.transform.position,
                             maxAnchorRange,
                             _maxMotionlessRange,
-                            _minAttachmentDotProduct,
-                            _alwaysAttachDistance);
+                            _minAttachmentDotProduct);
     }
 
     /// <summary>
@@ -583,16 +564,13 @@ namespace Leap.Unity.Interaction {
     /// anchor no matter what; a non-zero score indicates a possible anchor, with more optimal
     /// anchors receiving a score closer to 1.
     /// </summary>
-    public static float GetAnchorScore(Vector3 anchObjPos, Vector3 anchObjVel, Vector3 anchorPos, float maxDistance, float nonDirectedMaxDistance, float minAngleProduct,
-                                       float alwaysAttachDistance = 0f) {
+    public static float GetAnchorScore(Vector3 anchObjPos, Vector3 anchObjVel, Vector3 anchorPos, float maxDistance, float nonDirectedMaxDistance, float minAngleProduct) {
       // Calculated a "directedness" heuristic for determining whether the user is throwing or releasing without directed motion.
-      float directedness = anchObjVel.magnitude.Map(0.20F, 1F, 0F, 1F);
+      float directedness = anchObjVel.magnitude.Map(0.2F, 1F, 0F, 1F);
 
+      float distanceSqrd = (anchorPos - anchObjPos).sqrMagnitude;
       float effMaxDistance = directedness.Map(0F, 1F, nonDirectedMaxDistance, maxDistance);
-      Vector3 effPos = Utils.Map(Mathf.Sqrt(Mathf.Sqrt(directedness)), 0f, 1f,
-                                 anchObjPos, (anchObjPos - anchObjVel.normalized * effMaxDistance * 0.30f));
 
-      float distanceSqrd = (anchorPos - effPos).sqrMagnitude;
       float distanceScore;
       if (distanceSqrd > effMaxDistance * effMaxDistance) {
         distanceScore = 0F;
@@ -602,19 +580,18 @@ namespace Leap.Unity.Interaction {
       }
 
       float angleScore;
-      float dotProduct = Vector3.Dot(anchObjVel.normalized, (anchorPos - effPos).normalized);
+      float dotProduct = Vector3.Dot(anchObjVel.normalized, (anchorPos - anchObjPos).normalized);
 
       // Angular score only factors in based on how directed the motion of the object is.
       dotProduct = Mathf.Lerp(1F, dotProduct, directedness);
-      
-      angleScore = dotProduct.Map(minAngleProduct, 1f, 0f, 1f);
-      angleScore *= angleScore;
 
-      // Support an "always-attach distance" within which only distanceScore matters
-      float semiDistanceSqrd = (anchorPos - Vector3.Lerp(anchObjPos, effPos, 0.5f)).sqrMagnitude;
-      float useAlwaysAttachDistanceAmount = semiDistanceSqrd.Map(0f, Mathf.Max(0.0001f, (0.25f * alwaysAttachDistance * alwaysAttachDistance)),
-                                                                 1f, 0f);
-      angleScore = useAlwaysAttachDistanceAmount.Map(0f, 1f, angleScore, 1f);
+      if (dotProduct < minAngleProduct) {
+        angleScore = 0F;
+      }
+      else {
+        angleScore = dotProduct.Map(minAngleProduct, 1F, 0F, 1F);
+        angleScore *= angleScore;
+      }
 
       return distanceScore * angleScore;
     }
@@ -630,17 +607,22 @@ namespace Leap.Unity.Interaction {
 
       float reachTargetAmount = 0F;
       Vector3 towardsHand = Vector3.zero;
-      if (interactionBehaviour.isHovered) {
-        Hand hoveringHand = interactionBehaviour.closestHoveringHand;
+      if (interactionBehaviour != null) {
+        if (isAttractedByHand) {
+          if (interactionBehaviour.isHovered) {
+            Hand hoveringHand = interactionBehaviour.closestHoveringHand;
 
-        reachTargetAmount = Mathf.Clamp01(attractionReachByDistance.Evaluate(
-                              Vector3.Distance(hoveringHand.PalmPosition.ToVector3(), anchor.transform.position)
-                            ));
-        towardsHand = hoveringHand.PalmPosition.ToVector3() - anchor.transform.position;
+            reachTargetAmount = Mathf.Clamp01(attractionReachByDistance.Evaluate(
+                                  Vector3.Distance(hoveringHand.PalmPosition.ToVector3(), anchor.transform.position)
+                                ));
+            towardsHand = hoveringHand.PalmPosition.ToVector3() - anchor.transform.position;
+          }
+
+          Vector3 targetOffsetTowardsHand = towardsHand * maxAttractionReach * reachTargetAmount;
+
+          _offsetTowardsHand = Vector3.Lerp(_offsetTowardsHand, targetOffsetTowardsHand, 5 * Time.deltaTime);
+        }
       }
-
-      Vector3 targetOffsetTowardsHand = towardsHand * maxAttractionReach * reachTargetAmount;
-      _offsetTowardsHand = Vector3.Lerp(_offsetTowardsHand, targetOffsetTowardsHand, 5 * Time.deltaTime);
     }
 
     private void updateAnchorAttachment() {
@@ -798,7 +780,7 @@ namespace Leap.Unity.Interaction {
     private void tryToAnchorOnGraspEnd() {
       TryAttachToNearestAnchor();
 
-      OnPostTryAnchorOnGraspEnd();
+      OnPostTryAnchorOnGraspEnd(this);
     }
 
     #region Unity Events (Internal)
@@ -824,10 +806,15 @@ namespace Leap.Unity.Interaction {
       setupCallback(ref OnPostTryAnchorOnGraspEnd, EventType.OnPostTryAnchorOnGraspEnd);
     }
 
-    private void setupCallback(ref Action action, EventType type) {
-      if (_eventTable.HasUnityEvent((int)type)) {
-        action += () => _eventTable.Invoke((int)type);
-      }
+    private void setupCallback<T1, T2>(ref Action<T1, T2> action, EventType type)
+                                       where T1 : AnchorableBehaviour
+                                       where T2 : Anchor                          {
+      action += (anchObj, anchor) => _eventTable.Invoke((int)type);
+    }
+
+    private void setupCallback<T>(ref Action<T> action, EventType type)
+                                  where T : AnchorableBehaviour         {
+      action += (anchObj) => _eventTable.Invoke((int)type);
     }
 
     #endregion
