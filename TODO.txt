@@ -1,5 +1,4 @@
 - Time and score E
-- Player cant move over the edge E
 - Ball create over network J
 
 Sonntag:
