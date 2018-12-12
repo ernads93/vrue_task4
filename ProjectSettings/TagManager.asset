@@ -10,6 +10,14 @@ TagManager:
   - left
   - projectile
   - ball
+  - start
+  - window1
+  - window2
+  - window4
+  - window3
+  - window5
+  - window6
+  - window7
   layers:
   - Default
   - TransparentFX
