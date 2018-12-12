@@ -1,4 +1,3 @@
-- Time and score E
 - Ball create over network J
 
 Sonntag:
