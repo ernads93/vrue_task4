@@ -33,41 +33,52 @@ public class ViveMovement : MonoBehaviour {
         leftTrackpadDown = getTrackpadLeft();
         rightTrackpadDown = getTrackpadRight();
 
-        if (leftTriggerDown)
-        {
-            if (rig != null)
-            {  
-                rig.position += (transform.forward / 10 + move_hor);
-                
-            } 
-        }
-
         if (rightTriggerDown)
         {
-            if (rig != null)
+            if (rig.position.z > -17.0f)
+            { 
+                if (rig != null)
+                {
+
+                    rig.position += (transform.forward / 10 + move_hor);
+
+                }
+            }
+        }
+
+        if (leftTriggerDown)
+        {
+            if (rig.position.z < 9.5f)
             {
-                rig.position -= (transform.forward / 10 + move_hor);
-               
-               
+                if (rig != null)
+                {
+                rig.position -= (transform.forward / 10 + move_hor);  
+                }
             }
         }
 
         if (leftTrackpadDown)
         {
-            if (rig != null)
+            if (rig.position.x > -8.5f)
             {
-                rig.position += (transform.right / 10 + move_ver);
+                if (rig != null)
+                {
+                    rig.position += (transform.right / 10 + move_ver);
 
+                }
             }
         }
 
         if (rightTrackpadDown)
         {
-            if (rig != null)
+            if (rig.position.x < 17.0f)
             {
-                rig.position -= (transform.right / 10 + move_ver);
+                if (rig != null)
+                {
+                    rig.position -= (transform.right / 10 + move_ver);
 
 
+                }
             }
         }
 
