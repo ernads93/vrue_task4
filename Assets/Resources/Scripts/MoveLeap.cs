@@ -16,6 +16,8 @@ public class MoveLeap : MonoBehaviour {
     private Leap.Hand handLeft;
     private Leap.Hand handRight;
 
+
+    Actor actor;
     // Use this for initialization
     void Start () {        
         Leapcamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -25,21 +27,29 @@ public class MoveLeap : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-        if(Leapcamera!=null)
+        if(Leapcamera==null)
             Leapcamera = GameObject.FindGameObjectWithTag("MainCamera");
         
+        if(actor == null)
+        {
+            if (player == null)
+                player = GameObject.FindGameObjectWithTag("Player");
+
+            actor = player.GetComponentInChildren<Actor>();
+        }       
+
         if (rotateRight)
         {
             if(handRight == null)
                 handRight = right.GetLeapHand();
 
-            Leapcamera.transform.RotateAround(this.transform.position, Vector3.up, 20 * Time.deltaTime);
+            Leapcamera.transform.RotateAround(this.transform.position, Vector3.up, 30 * Time.deltaTime);
         }
         else if (rotateLeft) {
             if (handLeft== null)
                 handLeft = left.GetLeapHand();
 
-            Leapcamera.transform.RotateAround(this.transform.position, Vector3.up, -20 * Time.deltaTime);
+            Leapcamera.transform.RotateAround(this.transform.position, Vector3.up, -30 * Time.deltaTime);
         }
         else if (moveUp)
         {
@@ -47,11 +57,20 @@ public class MoveLeap : MonoBehaviour {
                 handRight = right.GetLeapHand();
 
             Vector3 dir = new Vector3(handRight.PalmNormal.x, 0.0f, handRight.PalmNormal.z);
+            Vector3 cameraPos = Leapcamera.transform.position;
+            Vector3 newPos = cameraPos+(dir/60.0f);
+            Vector3 checkPos = cameraPos+(dir/10.0f);
+            
+            actor.NetworkUpateLeapPos(checkPos);
+           
+            Debug.Log("checkPos: " + checkPos + " newPos: " + newPos);
+            Debug.Log("distanc: " + actor.getDistanceToOtherPlayer());
 
-            Vector3 newPos = Leapcamera.transform.position+(dir/100.0f);
-           // print(Vector3.Distance(newPos, Vector3.zero));
-            if(Vector3.Distance(newPos, Vector3.zero)<= 10)
-                Leapcamera.transform.position += dir/100.0f; 
+            // print(Vector3.Distance(newPos, Vector3.zero));
+            if (actor.getDistanceToOtherPlayer() < 5)
+            {
+                Leapcamera.transform.position = newPos;
+            } 
         }
     }
 
@@ -88,6 +107,5 @@ public class MoveLeap : MonoBehaviour {
         //print("Stop rotate right");
         rotateRight = false;
     }
-
 
 }

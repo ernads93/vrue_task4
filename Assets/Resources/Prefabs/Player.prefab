@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4000013189319060}
   - component: {fileID: 114000013933806726}
   - component: {fileID: 114000010788191632}
-  - component: {fileID: 114571751468894352}
+  - component: {fileID: 114877850720288704}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -53,6 +53,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a58c35739ba08499c6e976ee4223ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dummyVive: {fileID: 0}
   character: {fileID: 114000012522722070, guid: 4ba943236e1e12e4588a255815c2fce6,
     type: 2}
   transform: {fileID: 0}
@@ -89,7 +90,7 @@ MonoBehaviour:
     i15: 21
   m_ServerOnly: 0
   m_LocalPlayerAuthority: 1
---- !u!114 &114571751468894352
+--- !u!114 &114877850720288704
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -100,6 +101,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c9488cd1629f3c4d8d471a2829cc88b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objectPrefab: {fileID: 1577597484497498, guid: f7ab372e0f5dd64469b7f7684d06159b,
+  objectPrefab1: {fileID: 1577597484497498, guid: f7ab372e0f5dd64469b7f7684d06159b,
+    type: 2}
+  objectPrefab2: {fileID: 1444475432112802, guid: 24514e4c06fed4741a53ca465447180c,
     type: 2}
   createObj: 0

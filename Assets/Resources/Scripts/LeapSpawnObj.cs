@@ -5,48 +5,48 @@ using UnityEngine.Networking;
 
 public class LeapSpawnObj : NetworkBehaviour {
 
-    public GameObject objectPrefab;
+    public GameObject objectPrefab1;
+    public GameObject objectPrefab2;
     private Character character;
     private GameObject hierarchyObjects;
     public bool createObj;
 
     // Use this for initialization
     void Start () {
-        
-	}
+        createObj = false;
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
-        if (character == null)
-            character = gameObject.GetComponentInChildren<Actor>().character;
-
-        Debug.Log("createObj: " + createObj);
-
-        if (isLocalPlayer)
-        {
-            Debug.Log("localPlayer");
-            if (createObj || Input.GetKeyDown(KeyCode.R))
-            {
-                Debug.Log("inside create");
-                CmdCreateObject();
-                createObj = false;
-            }
-        }
+       
     }
 
-    public void CallObjectCreate()
-    {
-        createObj = true;
-        Debug.Log("createObj callobjcreate: " + createObj);
-         
+    public void CallObjectCreate(Vector3 spawnPos, int what)
+    { 
+
+            CmdCreateObject(spawnPos, what);
+        
     }
 
     [Command]
-    void CmdCreateObject()
+    void CmdCreateObject(Vector3 spawnPos, int what)
     {
 
         Debug.Log("spawnObject on server");
-        Vector3 spawnPos = (character.left.position + character.right.position) / 2.0f;
+        GameObject objectPrefab;
+        switch(what)
+        {
+            /*case 1: objectPrefab = objectPrefab1;
+                break;*/
+            case 2:
+                objectPrefab = objectPrefab2;
+                break;
+            default:
+                objectPrefab = objectPrefab1;
+                break;
+        }
+
         if (hierarchyObjects == null)
             hierarchyObjects = GameObject.FindGameObjectWithTag("Respawn");
 

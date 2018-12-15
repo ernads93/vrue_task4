@@ -18,6 +18,7 @@ TagManager:
   - window5
   - window6
   - window7
+  - dummyVive
   layers:
   - Default
   - TransparentFX

@@ -5,6 +5,14 @@ using System.Collections.Generic;
 
 public class Actor : NetworkBehaviour
 {
+    [SyncVar(hook = "UpdatePlayerPositions")]
+    float distanceToOtherPlayer = 0.0f;
+
+    public float getDistanceToOtherPlayer() { return distanceToOtherPlayer; }
+    Vector3 LeapPos;
+    Vector3 VivePos;
+
+    public GameObject dummyVive;
 
     public Character character;
     public new Transform transform;
@@ -13,6 +21,7 @@ public class Actor : NetworkBehaviour
     TouchLeft tl;
     private bool vive;
     private bool leap;
+
 
    // public GameObject capsulePrefab;
    // private GameObject hierarchyObjects;
@@ -27,7 +36,7 @@ public class Actor : NetworkBehaviour
     {
         get { return vive; }
         set { vive = value; }
-    }
+    } 
     public NetworkIdentity lastCollider;
 
     [SyncVar]
@@ -118,8 +127,13 @@ public class Actor : NetworkBehaviour
     public void Update()
     {
         if (!isLocalPlayer)
-            return;        
+            return;
+
+        if (isServer)
+            VivePos = dummyVive.transform.position;
     }
+
+ 
 
     /// <summary>
     /// Updates the actor position and rotation.
@@ -131,6 +145,9 @@ public class Actor : NetworkBehaviour
         {
             character.UpdateCharacterLeft(leftPos, leftRot);
         }
+
+        if (dummyVive == null)
+            dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
     }
 
     /// <summary>
@@ -269,7 +286,7 @@ public class Actor : NetworkBehaviour
 
     public void AssignLastCollider(NetworkIdentity other)
     {
-        if (lastCollider == null)
+       // if (lastCollider == null)
         {
             lastCollider = other;
             var ogb = other.gameObject.GetComponent<OnGrabbedBehaviour>();
@@ -283,8 +300,48 @@ public class Actor : NetworkBehaviour
                 }*/
     }
 
-    public void callObjectCreation() {
-      //  if (isLocalPlayer)
-       //     createObjects.CallObjectCreate();
+    void UpdatePlayerPositions(float newDist)
+    {
+        distanceToOtherPlayer = newDist;
+    }
+
+    public void NetworkUpateVivePos(Vector3 pos)
+    {
+        //VivePos = pos;
+       // updateDistance();
+        CmdVivePosUpdate(pos);
+    }
+
+    [Command]
+    void CmdVivePosUpdate(Vector3 pos)
+    {
+        VivePos = pos;        
+        updateDistance();
+    }
+
+
+    public void NetworkUpateLeapPos(Vector3 pos)
+    {
+       // LeapPos = pos;
+       // updateDistance();
+         CmdLeapPosUpdate(pos);
+    }
+
+    [Command]
+    void CmdLeapPosUpdate(Vector3 pos)
+    {
+        LeapPos = pos;
+        updateDistance();
+    }
+
+    void updateDistance() {
+        if (!isServer)
+            return;
+
+        if (VivePos != null && LeapPos != null)
+        {
+            distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
+            Debug.Log("distance server: " + distanceToOtherPlayer);
+        }
     }
 }
