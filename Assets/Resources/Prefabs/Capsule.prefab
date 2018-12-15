@@ -23,11 +23,11 @@ GameObject:
   - component: {fileID: 23557943210124650}
   - component: {fileID: 136599586157380164}
   - component: {fileID: 54321582267975272}
-  - component: {fileID: 114788640525302172}
   - component: {fileID: 114993875657622664}
   - component: {fileID: 114339299379642646}
   - component: {fileID: 114427972117519752}
   - component: {fileID: 114104772507152774}
+  - component: {fileID: 114396599233695674}
   m_Layer: 0
   m_Name: Capsule
   m_TagString: Untagged
@@ -43,7 +43,7 @@ Transform:
   m_GameObject: {fileID: 1577597484497498}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -2.25, y: 0.38, z: -0.42}
-  m_LocalScale: {x: 0.1420636, y: 0.21338427, z: -0.35230705}
+  m_LocalScale: {x: 0.4473258, y: 0.21338427, z: -0.35230705}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -117,7 +117,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   activateActionSetOnAttach: {fileID: 0}
-  hideHandOnAttach: 1
+  hideHandOnAttach: 0
   hideSkeletonOnAttach: 0
   hideControllerOnAttach: 0
   handAnimationOnPickup: 0
@@ -139,6 +139,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fd11b8f795da06449c9e5b1bfe45d3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &114396599233695674
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1577597484497498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1768714887, guid: dc443db3e92b4983b9738c1131f555cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TransformSyncMode: 3
+  m_SendInterval: 0.1
+  m_SyncRotationAxis: 7
+  m_RotationSyncCompression: 0
+  m_SyncSpin: 0
+  m_MovementTheshold: 0.001
+  m_VelocityThreshold: 0.0001
+  m_SnapThreshold: 5
+  m_InterpolateRotation: 1
+  m_InterpolateMovement: 1
 --- !u!114 &114427972117519752
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -171,36 +192,6 @@ MonoBehaviour:
     i15: 155
   m_ServerOnly: 0
   m_LocalPlayerAuthority: 1
---- !u!114 &114788640525302172
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1577597484497498}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f10fa40360571247a7ca806d6859557, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _manager: {fileID: 0}
-  _ignoreHoverMode: 0
-  _isIgnoringAllHoverState: 0
-  _ignorePrimaryHover: 0
-  _ignoreContact: 0
-  _ignoreGrasping: 0
-  _contactForceMode: 0
-  _allowMultiGrasp: 0
-  _moveObjectWhenGrasped: 1
-  graspedMovementType: 0
-  graspHoldWarpingEnabled__curIgnored: 1
-  _overrideInteractionLayer: 0
-  _interactionLayer:
-    layerIndex: 0
-  _overrideNoContactLayer: 0
-  _noContactLayer:
-    layerIndex: 0
-  _eventTable:
-    _entries: []
 --- !u!114 &114993875657622664
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -92,7 +92,7 @@ public class Actor : NetworkBehaviour
             {
                 // find objects that can be manipulated 
                 // TIPP : you can use a specific tag for all GO's that can be manipulated by players                
-
+                dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
             }
             if (isLocalPlayer)
             {
@@ -126,11 +126,19 @@ public class Actor : NetworkBehaviour
 
     public void Update()
     {
+        
         if (!isLocalPlayer)
             return;
 
-        if (isServer)
-            VivePos = dummyVive.transform.position;
+        if (dummyVive == null)
+        {
+            dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
+        }
+        else {
+
+            //VivePos = dummyVive.transform.position;
+        }
+
     }
 
  
@@ -144,10 +152,8 @@ public class Actor : NetworkBehaviour
         if (character != null)
         {
             character.UpdateCharacterLeft(leftPos, leftRot);
-        }
+        }         
 
-        if (dummyVive == null)
-            dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
     }
 
     /// <summary>
@@ -340,6 +346,8 @@ public class Actor : NetworkBehaviour
 
         if (VivePos != null && LeapPos != null)
         {
+
+            VivePos = dummyVive.transform.position;
             distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
             Debug.Log("distance server: " + distanceToOtherPlayer);
         }

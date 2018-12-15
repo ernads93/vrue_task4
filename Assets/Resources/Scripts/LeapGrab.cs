@@ -41,7 +41,7 @@ public class LeapGrab : MonoBehaviour
             // notify AuthorityManager that grab conditions are fulfilled
             //print("LEAP IS GRABABLE");
 
-            if (actor.lastCollider != null)
+            if (actor != null && actor.lastCollider != null)
             {
                // print("lastcollider is: " + actor.lastCollider);
                 am = actor.lastCollider.GetComponent<AuthorityManager>();

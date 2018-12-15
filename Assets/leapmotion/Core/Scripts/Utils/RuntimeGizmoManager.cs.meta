@@ -1,7 +1,8 @@
 fileFormatVersion: 2
 guid: 81dc33a21758b384586807f3656587d1
+timeCreated: 1470438805
+licenseType: Pro
 MonoImporter:
-  externalObjects: {}
   serializedVersion: 2
   defaultReferences:
   - _sphereMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}

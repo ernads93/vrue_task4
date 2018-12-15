@@ -1,7 +1,8 @@
 fileFormatVersion: 2
 guid: a04122797dd84ca43a07055f12d91e0f
+timeCreated: 1461985891
+licenseType: Pro
 MonoImporter:
-  externalObjects: {}
   serializedVersion: 2
   defaultReferences:
   - _material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}

@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -118,7 +118,9 @@ namespace Leap.Unity.Interaction {
     }
 
     void OnCollisionEnter(Collision collision) {
+      #if UNITY_EDITOR
       bool hitNonInteractionObject = false;
+      #endif
 
       if (collision.rigidbody == null) {
         #if UNITY_EDITOR
@@ -154,7 +156,9 @@ namespace Leap.Unity.Interaction {
           }
         }
         else {
+          #if UNITY_EDITOR
           hitNonInteractionObject = true;
+          #endif
         }
       }
 

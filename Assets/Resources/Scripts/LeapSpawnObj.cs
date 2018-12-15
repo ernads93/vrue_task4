@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using Leap.Unity.Interaction;
 
 public class LeapSpawnObj : NetworkBehaviour {
 
@@ -11,6 +12,7 @@ public class LeapSpawnObj : NetworkBehaviour {
     private GameObject hierarchyObjects;
     public bool createObj;
 
+    InteractionManager manager;
     // Use this for initialization
     void Start () {
         createObj = false;
@@ -19,7 +21,10 @@ public class LeapSpawnObj : NetworkBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-       
+       if(manager == null)
+        {
+            manager = GameObject.FindObjectOfType<InteractionManager>();
+        }
     }
 
     public void CallObjectCreate(Vector3 spawnPos, int what)
@@ -55,6 +60,9 @@ public class LeapSpawnObj : NetworkBehaviour {
 
         //set parent to avoid creating objects on the root level
          obj.transform.parent = hierarchyObjects.transform;
+
+       // var interactBehav = obj.GetComponentInChildren<InteractionBehaviour>();
+       // interactBehav.manager = manager;
 
         // Spawn the object on the Clients
         NetworkServer.Spawn(obj);

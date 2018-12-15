@@ -1,6 +1,6 @@
 /******************************************************************************
- * Copyright (C) Leap Motion, Inc. 2011-2017.                                 *
- * Leap Motion proprietary and  confidential.                                 *
+ * Copyright (C) Leap Motion, Inc. 2011-2018.                                 *
+ * Leap Motion proprietary and confidential.                                  *
  *                                                                            *
  * Use subject to the terms of the Leap Motion SDK Agreement available at     *
  * https://developer.leapmotion.com/sdk_agreement, or another agreement       *
@@ -22,7 +22,7 @@ namespace Leap.Unity.Interaction {
   /// 
   /// For a reference implementation, refer to DefaultVRNodeTrackingProvider.
   /// </summary>
-  public interface IVRControllerTrackingProvider {
+  public interface IXRControllerTrackingProvider {
 
     /// <summary>
     /// Gets whether or not this provider is currently tracking the controller for which
