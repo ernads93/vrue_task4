@@ -49,6 +49,9 @@ public class ChangeColor : MonoBehaviour {
 
           //  if (actor.lastCollider != null)
               actor.AssignLastCollider(other.GetComponent<NetworkIdentity>());
+            var am = other.gameObject.GetComponent<AuthorityManager>();
+            if (am != null)
+                am.AssignActor(actor);
         }
     }
 

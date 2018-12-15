@@ -14,6 +14,9 @@ public class Actor : NetworkBehaviour
     private bool vive;
     private bool leap;
 
+   // public GameObject capsulePrefab;
+   // private GameObject hierarchyObjects;
+
     public bool leapStatus
     {
         get { return leap; }
@@ -25,7 +28,7 @@ public class Actor : NetworkBehaviour
         get { return vive; }
         set { vive = value; }
     }
-    public NetworkIdentity lastCollider; 
+    public NetworkIdentity lastCollider;
 
     [SyncVar]
     private string prefabName = "";
@@ -37,6 +40,7 @@ public class Actor : NetworkBehaviour
     public bool wantsAuthority { get; set; }
 
     //*******************************
+    //private CreateManipObj createObjects;
 
 
     protected virtual void Awake()
@@ -47,6 +51,7 @@ public class Actor : NetworkBehaviour
     // Use this for initialization
     void Start()
     {
+        //hierarchyObjects = GameObject.FindGameObjectWithTag("Respawn");
 
         if (isServer || isLocalPlayer)
         {
@@ -101,18 +106,19 @@ public class Actor : NetworkBehaviour
             // Initialize on startup
             Initialize(prefabName);
         }
-        playerTag = GameObject.FindGameObjectWithTag("Player");     
+        playerTag = GameObject.FindGameObjectWithTag("Player");
 
         // include inactive children, as the capsule hands are only set active 
         // if Leap rexognizes your hands
         tr = playerTag.GetComponentInChildren<TouchRight>(true);
         tl = playerTag.GetComponentInChildren<TouchLeft>(true);
+        //createObjects = gameObject.GetComponentInChildren<CreateManipObj>();
     }
 
     public void Update()
     {
         if (!isLocalPlayer)
-            return;       
+            return;        
     }
 
     /// <summary>
@@ -243,9 +249,9 @@ public class Actor : NetworkBehaviour
     // netID is NetworkIdentity of a shared object the authority if which should be removed from the client
     [Command]
     void CmdRemoveObjectAuthorityFromClient(NetworkIdentity netID)
-    {        
+    {
         var am = netID.GetComponent<AuthorityManager>();
-        am.RemoveClientAuthority(base.connectionToClient);           
+        am.RemoveClientAuthority(base.connectionToClient);
     }
     //*******************************
 
@@ -258,20 +264,27 @@ public class Actor : NetworkBehaviour
     public void TouchRight(bool state)
     {
         tr.SetRightHandTouch(state);
-       // print("is touch right? - " + (state ? " yes" : " no"));
+        // print("is touch right? - " + (state ? " yes" : " no"));
     }
 
     public void AssignLastCollider(NetworkIdentity other)
     {
-
         if (lastCollider == null)
         {
-            lastCollider = other;            
+            lastCollider = other;
+            var ogb = other.gameObject.GetComponent<OnGrabbedBehaviour>();
+            if (ogb != null)
+                ogb.setActor(this);
         }
-        else
-        {   // iff ids are different, hand are touching different boxes
-            //print((lastCollider.netId==other.netId)  + "lastcollier id: " + lastCollider.netId + " newly id: " + other.netId);
-            lastCollider = (lastCollider.netId == other.netId) ? other : null;
-        }
+        /*       else
+                {   // iff ids are different, hand are touching different boxes
+                    //print((lastCollider.netId==other.netId)  + "lastcollier id: " + lastCollider.netId + " newly id: " + other.netId);
+                    lastCollider = (lastCollider.netId == other.netId) ? other : null;
+                }*/
+    }
+
+    public void callObjectCreation() {
+      //  if (isLocalPlayer)
+       //     createObjects.CallObjectCreate();
     }
 }

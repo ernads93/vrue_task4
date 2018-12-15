@@ -33,9 +33,9 @@ public class OnGrabbedBehaviour : MonoBehaviour
                 Character character = actor.GetComponentInChildren<Character>();
 
                 // midpoint between left/right character hands              
-                transform.position = (character.left.position + character.right.position) / 2;
+                //transform.position = (character.left.position + character.right.position) / 2;
 
-                GetComponent<Rigidbody>().useGravity = false;
+                //GetComponent<Rigidbody>().useGravity = false;
             }                
             //gameObject.GetComponent<Renderer>().material.color = Color.blue;         
            
@@ -59,6 +59,7 @@ public class OnGrabbedBehaviour : MonoBehaviour
     {
         actor = ac;
     }
+
     // called first time when the GO gets grabbed by a player
     public void OnGrabbed()
     {

@@ -60,7 +60,7 @@ public class AuthorityManager : NetworkBehaviour
             {
                 pendingAccess = false;
 
-                // print("we have authority");
+                 print("we have authority");
                 if (grabbedByPlayer)
                 {
                     // print(name + " id: " + netId);
@@ -68,7 +68,7 @@ public class AuthorityManager : NetworkBehaviour
                     {
                         //print("both collider set");
 
-                       // onb.setColor(Color.red);
+                        onb.setColor(Color.red);
                         onb.vive = localActor.viveStatus;
                         onb.leap = localActor.leapStatus;
                         onb.setActor(localActor);
@@ -80,9 +80,10 @@ public class AuthorityManager : NetworkBehaviour
                     if (!pendingRelease)
                     {
                         onb.OnReleased();
-                        //onb.setColor(Color.green);
+                        onb.setColor(Color.green);
                         print("we return auhtority: ");
-                        localActor.ReturnObjectAuthority(netID);
+                        if(localActor!=null)
+                            localActor.ReturnObjectAuthority(netID);
                         pendingRelease = true;
                     }                           
                 }
@@ -93,7 +94,7 @@ public class AuthorityManager : NetworkBehaviour
             }
             else if (grabbedByPlayer && !pendingAccess)
             {
-                //print("we want control");
+                print("we want control");
                 localActor.RequestObjectAuthority(netID);
                 pendingAccess = true;
             }          

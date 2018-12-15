@@ -33,7 +33,7 @@ public class LeapGrab : MonoBehaviour
                 actor.leapStatus = true;
         }
 
-        if (leftHandTouching && rightHandTouching && leftPinch && rightPinch)
+        if (leftHandTouching || rightHandTouching)// && leftPinch && rightPinch)
         {
             // notify AuthorityManager that grab conditions are fulfilled
             //print("LEAP IS GRABABLE");
