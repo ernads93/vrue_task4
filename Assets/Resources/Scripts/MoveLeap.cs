@@ -68,7 +68,7 @@ public class MoveLeap : MonoBehaviour {
             Debug.Log("distance: " + actor.getDistanceToOtherPlayer());
 
             // print(Vector3.Distance(newPos, Vector3.zero));
-           if (actor.getDistanceToOtherPlayer() < 3)
+           if (actor.getDistanceToOtherPlayer() < 2.5)
             {
                 Leapcamera.transform.position = newPos;
             } 
