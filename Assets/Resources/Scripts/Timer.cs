@@ -31,7 +31,7 @@ public class Timer : MonoBehaviour {
         if (actor == null)
             actor = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Actor>();
 
-        if (!actor.leapStatus)
+        if (actor != null && !actor.leapStatus)
         { 
             leftTriggerDown = getPinchLeft();
             rightTriggerDown = getPinchRight();
@@ -51,13 +51,13 @@ public class Timer : MonoBehaviour {
 
         countdownText.text = ("Time Left = " + timeLeft + " sec");
 
-        if (timeLeft <= 0)
+       /* if (timeLeft <= 0)
         {
             StopCoroutine("LoseTime");
             countdownText.text = "GAME OVER!";
             countdownText.color = Color.red;
             Time.timeScale = 0;
-        }
+        }*/
     }
 
     IEnumerator LoseTime()

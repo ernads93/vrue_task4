@@ -9,15 +9,13 @@ public class Actor : NetworkBehaviour
     [SyncVar(hook = "UpdatePlayerPositions")]
     float distanceToOtherPlayer = 0.0f;
 
-    [SyncVar]//(hook = "UpdateScore")]
+    [SyncVar]
     int score = -1;
 
 
     public float getDistanceToOtherPlayer() { return distanceToOtherPlayer; }
     Vector3 LeapPos;
     Vector3 VivePos;
-
-    public GameObject dummyVive;
 
     public Character character;
     public new Transform transform;
@@ -99,8 +97,7 @@ public class Actor : NetworkBehaviour
             if (isServer)
             {
                 // find objects that can be manipulated 
-                // TIPP : you can use a specific tag for all GO's that can be manipulated by players                
-                dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
+                // TIPP : you can use a specific tag for all GO's that can be manipulated by players                               
             }
             if (isLocalPlayer)
             {
@@ -144,18 +141,7 @@ public class Actor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
-        if (dummyVive == null)
-        {
-            dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
-        }
-        else
-        {
-
-            //VivePos = dummyVive.transform.position;
-        }
-
-
-        checkScore();
+         checkScore();
         //UpdateScore();
     }
 
@@ -341,14 +327,14 @@ public class Actor : NetworkBehaviour
     {
         VivePos = pos;
         Debug.Log("VivePOs: " + VivePos);
-        updateDistance();
+        distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
     }
 
 
     public void NetworkUpateLeapPos(Vector3 pos)
     {
         // LeapPos = pos;
-        // updateDistance();
+        // updateDistance();        
         CmdLeapPosUpdate(pos);
     }
 
@@ -356,7 +342,8 @@ public class Actor : NetworkBehaviour
     void CmdLeapPosUpdate(Vector3 pos)
     {
         LeapPos = pos;
-        updateDistance();
+        Debug.Log("LeapPOs: " + LeapPos);
+        distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
     }
 
     public void NetworkUpdateScore(int add)
@@ -376,14 +363,15 @@ public class Actor : NetworkBehaviour
         {
             score += add;
         }
+        RpcUpdateScore(score);
         //UpdateScore(score);
     }
 
     void updateDistance()
     {
-        if (!isServer)
+       /* if (!isServer)
             return;
-
+            */
         if (VivePos != null && LeapPos != null)
         {
 
@@ -403,7 +391,8 @@ public class Actor : NetworkBehaviour
         pointsText.text = ("Points: " + score);
     }
 
-    void UpdateScore(int newScore)
+    [ClientRpc]
+    void RpcUpdateScore(int newScore)
     {
         if (!isServer)
             return;
