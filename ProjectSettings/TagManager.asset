@@ -20,6 +20,8 @@ TagManager:
   - window7
   - dummyVive
   - Manager
+  - Timer
+  - Points
   layers:
   - Default
   - TransparentFX

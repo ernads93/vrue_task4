@@ -82,8 +82,8 @@ public class AuthorityManager : NetworkBehaviour
                         onb.OnReleased();
                         onb.setColor(Color.green);
                         print("we return auhtority: ");
-                        if(localActor!=null)
-                            localActor.ReturnObjectAuthority(netID);
+                        /*if(localActor!=null)
+                            localActor.ReturnObjectAuthority(netID);*/
                         pendingRelease = true;
                     }                           
                 }
@@ -119,6 +119,7 @@ public class AuthorityManager : NetworkBehaviour
         else
         {
             requestAuth.Add(conn);
+            RemoveClientAuthority(netID.clientAuthorityOwner);
         }
     }
 

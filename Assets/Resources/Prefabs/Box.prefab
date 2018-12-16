@@ -33,7 +33,7 @@ GameObject:
   - component: {fileID: 114859807146553396}
   m_Layer: 0
   m_Name: Box
-  m_TagString: shared
+  m_TagString: ball
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -175,7 +175,6 @@ MonoBehaviour:
   _allowMultiGrasp: 0
   _moveObjectWhenGrasped: 1
   graspedMovementType: 0
-  graspHoldWarpingEnabled__curIgnored: 1
   _overrideInteractionLayer: 0
   _interactionLayer:
     layerIndex: 0

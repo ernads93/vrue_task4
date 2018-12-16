@@ -33,6 +33,7 @@ public class ViveMovement : MonoBehaviour {
         leftTrackpadDown = getTrackpadLeft();
         rightTrackpadDown = getTrackpadRight();
 
+        Vector3 moveMe = Vector3.zero;
         if (rightTriggerDown)
         {
             if (rig.position.z > -17.0f)
@@ -40,7 +41,7 @@ public class ViveMovement : MonoBehaviour {
                 if (rig != null)
                 {
 
-                    rig.position += (transform.forward / 10 + move_hor);
+                    moveMe = (transform.forward / 10 + move_hor);
 
                 }
             }
@@ -52,7 +53,7 @@ public class ViveMovement : MonoBehaviour {
             {
                 if (rig != null)
                 {
-                rig.position -= (transform.forward / 10 + move_hor);  
+                    moveMe = -(transform.forward / 10 + move_hor);  
                 }
             }
         }
@@ -63,7 +64,8 @@ public class ViveMovement : MonoBehaviour {
             {
                 if (rig != null)
                 {
-                    rig.position += (transform.right / 10 + move_ver);
+                    //rig.position += (transform.right / 10 + move_ver);
+                    moveMe = (transform.right / 10 + move_ver);
 
                 }
             }
@@ -75,12 +77,17 @@ public class ViveMovement : MonoBehaviour {
             {
                 if (rig != null)
                 {
-                    rig.position -= (transform.right / 10 + move_ver);
+                    // rig.position -= (transform.right / 10 + move_ver);
+                    moveMe = -(transform.right / 10 + move_ver);
 
 
                 }
             }
         }
+
+        //check if in proximity of leap, otherwise hands have to touch and then we can move
+        // TODO
+        rig.position += moveMe;
 
     }
 

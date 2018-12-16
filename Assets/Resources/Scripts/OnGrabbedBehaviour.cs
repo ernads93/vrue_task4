@@ -48,6 +48,7 @@ public class OnGrabbedBehaviour : MonoBehaviour
                     leapInteract = gameObject.GetComponentInChildren<InteractionBehaviour>();
                     if (leapInteract == null)
                     {
+                        
                         leapInteract = gameObject.AddComponent<InteractionBehaviour>();
                         leapInteract.manager = manager;
                     }

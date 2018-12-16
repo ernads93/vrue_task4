@@ -9,14 +9,15 @@ public class Timer : MonoBehaviour {
 
     private bool leftTriggerDown = false;
     private bool rightTriggerDown = false;
-    private bool m_gameStart = false;
+    public bool m_gameStart = false;
 
+    private Actor actor;
     private int timeLeft = 120;
     public Text countdownText;
     
     public Hand hand_left;
     public Hand hand_right;
-
+    
     // Use this for initialization
     void Start()
     {
@@ -26,15 +27,19 @@ public class Timer : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-        leftTriggerDown = getPinchLeft();
-        rightTriggerDown = getPinchRight();
 
-        if (leftTriggerDown == true || rightTriggerDown == true)
+        if (actor == null)
+            actor = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Actor>();
+
+        //leftTriggerDown = getPinchLeft();
+       // rightTriggerDown = getPinchRight();
+
+      //  if (leftTriggerDown == true || rightTriggerDown == true)
         {
-            if(m_gameStart == false)
+            if(m_gameStart == true)
             {
                 StartCoroutine("LoseTime");
-                m_gameStart = true;
+                //m_gameStart = true;
             }  
         }
 
@@ -66,5 +71,10 @@ public class Timer : MonoBehaviour {
     public bool getPinchRight()
     {
         return SteamVR_Input._default.inActions.GrabPinch.GetState(hand_right.handType);
+    }
+
+    public void StartGame()
+    {
+        m_gameStart = true;
     }
 }

@@ -2,11 +2,16 @@
 using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class Actor : NetworkBehaviour
 {
     [SyncVar(hook = "UpdatePlayerPositions")]
     float distanceToOtherPlayer = 0.0f;
+
+    [SyncVar]//(hook = "UpdateScore")]
+    int score = -1;
+
 
     public float getDistanceToOtherPlayer() { return distanceToOtherPlayer; }
     Vector3 LeapPos;
@@ -22,9 +27,12 @@ public class Actor : NetworkBehaviour
     private bool vive;
     private bool leap;
 
+    Text timerText;
+    Timer timer;
+    Text pointsText;
 
-   // public GameObject capsulePrefab;
-   // private GameObject hierarchyObjects;
+    // public GameObject capsulePrefab;
+    // private GameObject hierarchyObjects;
 
     public bool leapStatus
     {
@@ -36,7 +44,7 @@ public class Actor : NetworkBehaviour
     {
         get { return vive; }
         set { vive = value; }
-    } 
+    }
     public NetworkIdentity lastCollider;
 
     [SyncVar]
@@ -106,6 +114,12 @@ public class Actor : NetworkBehaviour
                         o.GetComponent<AuthorityManager>().AssignActor(this);
                     }
                 }
+
+                var timerObj = GameObject.FindGameObjectWithTag("Timer");
+                timerText = timerObj.GetComponentInChildren<Text>();
+                timer = timerObj.GetComponentInChildren<Timer>();
+                pointsText = GameObject.FindGameObjectWithTag("Points").GetComponentInChildren<Text>();
+
             }
             //*******************************
 
@@ -126,7 +140,7 @@ public class Actor : NetworkBehaviour
 
     public void Update()
     {
-        
+
         if (!isLocalPlayer)
             return;
 
@@ -134,14 +148,18 @@ public class Actor : NetworkBehaviour
         {
             dummyVive = GameObject.FindGameObjectWithTag("dummyVive");
         }
-        else {
+        else
+        {
 
             //VivePos = dummyVive.transform.position;
         }
 
+
+        checkScore();
+        //UpdateScore();
     }
 
- 
+
 
     /// <summary>
     /// Updates the actor position and rotation.
@@ -152,7 +170,7 @@ public class Actor : NetworkBehaviour
         if (character != null)
         {
             character.UpdateCharacterLeft(leftPos, leftRot);
-        }         
+        }
 
     }
 
@@ -292,7 +310,7 @@ public class Actor : NetworkBehaviour
 
     public void AssignLastCollider(NetworkIdentity other)
     {
-       // if (lastCollider == null)
+        // if (lastCollider == null)
         {
             lastCollider = other;
             var ogb = other.gameObject.GetComponent<OnGrabbedBehaviour>();
@@ -314,42 +332,87 @@ public class Actor : NetworkBehaviour
     public void NetworkUpateVivePos(Vector3 pos)
     {
         //VivePos = pos;
-       // updateDistance();
+        // updateDistance();
         CmdVivePosUpdate(pos);
     }
 
     [Command]
     void CmdVivePosUpdate(Vector3 pos)
     {
-        VivePos = pos;        
+        VivePos = pos;
         updateDistance();
     }
 
 
     public void NetworkUpateLeapPos(Vector3 pos)
     {
-       // LeapPos = pos;
-       // updateDistance();
-         CmdLeapPosUpdate(pos);
+        // LeapPos = pos;
+        // updateDistance();
+        CmdLeapPosUpdate(pos);
     }
 
     [Command]
     void CmdLeapPosUpdate(Vector3 pos)
     {
         LeapPos = pos;
-        updateDistance();
+        //updateDistance();
     }
 
-    void updateDistance() {
+    public void NetworkUpdateScore(int add)
+    {
+        if(isLocalPlayer)
+            CmdUpdateScore(add);
+    }
+
+    [Command]
+    void CmdUpdateScore(int add)
+    {
+        if (score == -1)
+        {
+            score = 0;
+        }
+        else
+        {
+            score += add;
+        }
+        //UpdateScore(score);
+    }
+
+    void updateDistance()
+    {
         if (!isServer)
             return;
 
         if (VivePos != null && LeapPos != null)
         {
 
-            VivePos = dummyVive.transform.position;
+            //VivePos = dummyVive.transform.position;
             distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
             Debug.Log("distance server: " + distanceToOtherPlayer);
         }
+    }
+
+    void checkScore() {
+
+        if (score == 0)
+        {
+            timer.StartGame();
+        }
+
+        pointsText.text = ("Points: " + score);
+    }
+
+    void UpdateScore(int newScore)
+    {
+        if (!isServer)
+            return;
+
+        if (newScore == 0)
+        {
+            timer.StartGame();
+        }
+
+        score = newScore;
+        pointsText.text = ("Points: " + score);
     }
 }
