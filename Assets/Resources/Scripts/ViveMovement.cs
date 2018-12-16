@@ -13,6 +13,7 @@ public class ViveMovement : MonoBehaviour {
     bool leftTrackpadDown = false;
     bool rightTrackpadDown = false;
     Actor actor;
+    private GameObject player;
 
     [SerializeField]
     private Transform rig;
@@ -31,13 +32,17 @@ public class ViveMovement : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-
+        
         if (actor == null)
         {
-            actor = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Actor>();
+            if (player == null)
+                player = GameObject.FindGameObjectWithTag("Player");
+
+            actor = player.GetComponentInChildren<Actor>();
         }
 
-        actor.NetworkUpateVivePos(rig.transform.position);
+        if (actor != null)
+           actor.NetworkUpateVivePos(rig.position);
 
         leftTriggerDown = getGripLeft();
         rightTriggerDown = getGripRight();
