@@ -415,4 +415,9 @@ public class Actor : NetworkBehaviour
         score = newScore;
         pointsText.text = ("Points: " + score);
     }
+
+    public int getScore() {
+        return score;
+
+    }
 }
