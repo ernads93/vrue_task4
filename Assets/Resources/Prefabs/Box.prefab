@@ -28,6 +28,8 @@ GameObject:
   - component: {fileID: 114028421589965588}
   - component: {fileID: 114409518518355168}
   - component: {fileID: 114994252287749822}
+  - component: {fileID: 114740165490174672}
+  - component: {fileID: 114163561029392298}
   m_Layer: 0
   m_Name: Box
   m_TagString: Untagged
@@ -63,7 +65,7 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 2100000, guid: d51ddd39b088e46cfaee4ec821bbcc3a, type: 2}
+  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -173,6 +175,18 @@ MonoBehaviour:
       Culture=neutral, PublicKeyToken=null
   snapAttachEaseInCompleted: 0
   interactable: {fileID: 0}
+--- !u!114 &114163561029392298
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1570264209116908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8c637b3782453e4a811b4225ffdb1f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textField: {fileID: 0}
 --- !u!114 &114409518518355168
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -228,6 +242,17 @@ MonoBehaviour:
   handFollowTransformRotation: 1
   highlightOnHover: 1
   hideHighlight: []
+--- !u!114 &114740165490174672
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1570264209116908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fd11b8f795da06449c9e5b1bfe45d3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114994252287749822
 MonoBehaviour:
   m_ObjectHideFlags: 1
