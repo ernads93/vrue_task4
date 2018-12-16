@@ -340,6 +340,7 @@ public class Actor : NetworkBehaviour
     void CmdVivePosUpdate(Vector3 pos)
     {
         VivePos = pos;
+        Debug.Log("VivePOs: " + VivePos);
         updateDistance();
     }
 
@@ -355,7 +356,7 @@ public class Actor : NetworkBehaviour
     void CmdLeapPosUpdate(Vector3 pos)
     {
         LeapPos = pos;
-        //updateDistance();
+        updateDistance();
     }
 
     public void NetworkUpdateScore(int add)
