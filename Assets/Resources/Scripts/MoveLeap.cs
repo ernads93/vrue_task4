@@ -65,10 +65,10 @@ public class MoveLeap : MonoBehaviour {
                 actor.NetworkUpateLeapPos(checkPos);            
            
            // Debug.Log("checkPos: " + checkPos + " newPos: " + newPos);
-           // Debug.Log("distanc: " + actor.getDistanceToOtherPlayer());
+            Debug.Log("distance: " + actor.getDistanceToOtherPlayer());
 
             // print(Vector3.Distance(newPos, Vector3.zero));
-            if (actor.getDistanceToOtherPlayer() < 1)
+            if (actor.getDistanceToOtherPlayer() < 3)
             {
                 Leapcamera.transform.position = newPos;
             } 
