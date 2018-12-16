@@ -6,15 +6,16 @@ using UnityEngine.UI;
 
 public class Actor : NetworkBehaviour
 {
-    [SyncVar]
+    [SyncVar(hook = "UpdatePlayerPositions")]
     float distanceToOtherPlayer = 0.0f;
 
     [SyncVar]
     int score = -1;
 
+
     public float getDistanceToOtherPlayer() { return distanceToOtherPlayer; }
     Vector3 LeapPos;
-    Vector3 VivePos = new Vector3(4.7f,0.031f, 0.086f);
+    Vector3 VivePos = new Vector3(4.16f, 0.6f,0.92f);
 
     public Character character;
     public new Transform transform;
@@ -23,7 +24,6 @@ public class Actor : NetworkBehaviour
     TouchLeft tl;
     private bool vive;
     private bool leap;
-    GameObject[] players;
 
     Text timerText;
     Timer timer;
@@ -66,7 +66,7 @@ public class Actor : NetworkBehaviour
     // Use this for initialization
     void Start()
     {
-        //hierarchyObjects = GameObject.FindGameObjectWithTag("Respawn");        
+        //hierarchyObjects = GameObject.FindGameObjectWithTag("Respawn");
 
         if (isServer || isLocalPlayer)
         {
@@ -97,8 +97,7 @@ public class Actor : NetworkBehaviour
             if (isServer)
             {
                 // find objects that can be manipulated 
-                // TIPP : you can use a specific tag for all GO's that can be manipulated by players                
-                
+                // TIPP : you can use a specific tag for all GO's that can be manipulated by players                               
             }
             if (isLocalPlayer)
             {
@@ -138,11 +137,11 @@ public class Actor : NetworkBehaviour
 
     public void Update()
     {
+
         if (!isLocalPlayer)
             return;
 
-        
-         checkScore();
+        checkScore();
         //UpdateScore();
     }
 
@@ -329,7 +328,6 @@ public class Actor : NetworkBehaviour
         VivePos = pos;
         Debug.Log("VivePOs: " + VivePos);
         distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
-        RpcupdateDistance();
     }
 
 
@@ -344,14 +342,13 @@ public class Actor : NetworkBehaviour
     void CmdLeapPosUpdate(Vector3 pos)
     {
         LeapPos = pos;
-        //Debug.Log("LeapPOs: " + LeapPos);
+        Debug.Log("LeapPOs: " + LeapPos);
         distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
-        RpcupdateDistance();
     }
 
     public void NetworkUpdateScore(int add)
     {
-        if(isLocalPlayer)
+        if (isLocalPlayer)
             CmdUpdateScore(add);
     }
 
@@ -366,27 +363,26 @@ public class Actor : NetworkBehaviour
         {
             score += add;
         }
-
-        var arr = GameObject.FindGameObjectsWithTag("Player");
-        for(int i =0; i <arr.Length; i++)
-            TargetUpdateScore(arr[i].GetComponentInChildren<NetworkIdentity>().connectionToServer, score);
-     
+        RpcUpdateScore(score);
+        //UpdateScore(score);
     }
 
-    [ClientRpc]
-    void RpcupdateDistance()
+    void updateDistance()
     {
-       /* if (!isServer)
-            return;
-            */
+        /* if (!isServer)
+             return;
+             */
         if (VivePos != null && LeapPos != null)
         {
+
+            //VivePos = dummyVive.transform.position;
             distanceToOtherPlayer = Vector3.Distance(VivePos, LeapPos);
             Debug.Log("distance server: " + distanceToOtherPlayer);
         }
     }
 
-    void checkScore() {
+    void checkScore()
+    {
 
         if (score == 0)
         {
@@ -396,21 +392,23 @@ public class Actor : NetworkBehaviour
         pointsText.text = ("Points: " + score);
     }
 
-    [TargetRpc]
-    void TargetUpdateScore(NetworkConnection target,int newScore)
+    [ClientRpc]
+    void RpcUpdateScore(int newScore)
     {
+        if (!isServer)
+            return;
 
         if (newScore == 0)
         {
             timer.StartGame();
         }
 
-        Debug.Log("ClientRPC");
         score = newScore;
         pointsText.text = ("Points: " + score);
     }
 
-    public int getScore() {
+    public int getScore()
+    {
         return score;
 
     }

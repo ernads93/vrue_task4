@@ -69,11 +69,11 @@ public class LeapGrab : MonoBehaviour
             Vector3 spawnPos = (character.left.position + character.right.position) / 2.0f;
             Debug.Log("inside create");
 
-            int whichObj = 2;
+            int whichObj = 1;
 
             if (actor.getScore() > 7)
             {
-                whichObj = 1;
+                whichObj = 2;
             }
 
             script.CallObjectCreate(spawnPos, whichObj);

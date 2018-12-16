@@ -53,7 +53,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a58c35739ba08499c6e976ee4223ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dummyVive: {fileID: 0}
   character: {fileID: 114000012522722070, guid: 4ba943236e1e12e4588a255815c2fce6,
     type: 2}
   transform: {fileID: 0}
@@ -103,6 +102,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectPrefab1: {fileID: 1577597484497498, guid: f7ab372e0f5dd64469b7f7684d06159b,
     type: 2}
-  objectPrefab2: {fileID: 1444475432112802, guid: 24514e4c06fed4741a53ca465447180c,
+  objectPrefab2: {fileID: 1570264209116908, guid: c00dc640c8384bf42b70e75e65fd9110,
     type: 2}
   createObj: 0
