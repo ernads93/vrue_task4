@@ -49,7 +49,7 @@ public class Timer : MonoBehaviour {
             }  
         
 
-        countdownText.text = ("Time Left = " + timeLeft + " sec");
+        //countdownText.text = ("Time Left = " + timeLeft + " sec");
 
        /* if (timeLeft <= 0)
         {
