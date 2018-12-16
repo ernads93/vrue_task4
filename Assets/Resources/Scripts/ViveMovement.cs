@@ -12,6 +12,7 @@ public class ViveMovement : MonoBehaviour {
     bool rightTriggerDown = false;
     bool leftTrackpadDown = false;
     bool rightTrackpadDown = false;
+    Actor actor;
 
     [SerializeField]
     private Transform rig;
@@ -19,14 +20,24 @@ public class ViveMovement : MonoBehaviour {
     private Vector3 move_hor = new Vector3(0.0f, 0.0f, 0.002f);
     private Vector3 move_ver = new Vector3(0.002f, 0.0f, 0.0f);
 
+    private Vector3 position = Vector3.zero;
+
     // Use this for initialization
     void Start () {
         hand_left = gameObject.transform.Find("Controller (left)").GetComponent<Hand>();
         hand_right = gameObject.transform.Find("Controller (right)").GetComponent<Hand>();
+        
     }
 	
 	// Update is called once per frame
 	void Update () {
+
+        if (actor == null)
+        {
+            actor = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Actor>();
+        }
+
+        actor.NetworkUpateVivePos(rig.transform.position);
 
         leftTriggerDown = getGripLeft();
         rightTriggerDown = getGripRight();
@@ -36,7 +47,7 @@ public class ViveMovement : MonoBehaviour {
         Vector3 moveMe = Vector3.zero;
         if (rightTriggerDown)
         {
-            if (rig.position.z > -17.0f)
+            if (rig.position.z > -13.0f)
             { 
                 if (rig != null)
                 {
@@ -49,7 +60,7 @@ public class ViveMovement : MonoBehaviour {
 
         if (leftTriggerDown)
         {
-            if (rig.position.z < 9.5f)
+            if (rig.position.z < 12.5f)
             {
                 if (rig != null)
                 {
@@ -60,7 +71,7 @@ public class ViveMovement : MonoBehaviour {
 
         if (leftTrackpadDown)
         {
-            if (rig.position.x > -8.5f)
+            if (rig.position.x > -0.5f)
             {
                 if (rig != null)
                 {
@@ -73,7 +84,7 @@ public class ViveMovement : MonoBehaviour {
 
         if (rightTrackpadDown)
         {
-            if (rig.position.x < 17.0f)
+            if (rig.position.x < 24.0f)
             {
                 if (rig != null)
                 {

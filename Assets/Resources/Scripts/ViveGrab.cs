@@ -40,7 +40,7 @@ public class ViveGrab : MonoBehaviour {
         leftTriggerDown = getPinchLeft();
         rightTriggerDown = getPinchRight();
 
-        if (leftHandTouching && rightHandTouching) // && leftTriggerDown && rightTriggerDown)
+        if (leftHandTouching || rightHandTouching) 
         {
             // notify AuthorityManager that grab conditions are fulfilled
             if (actor.lastCollider != null)

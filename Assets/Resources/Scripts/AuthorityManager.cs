@@ -118,8 +118,9 @@ public class AuthorityManager : NetworkBehaviour
         }
         else
         {
-            requestAuth.Add(conn);
-            RemoveClientAuthority(netID.clientAuthorityOwner);
+            //requestAuth.Add(conn);
+            netID.RemoveClientAuthority(netID.clientAuthorityOwner);
+            netID.AssignClientAuthority(conn);
         }
     }
 
