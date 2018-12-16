@@ -31,17 +31,23 @@ public class Timer : MonoBehaviour {
         if (actor == null)
             actor = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Actor>();
 
-        //leftTriggerDown = getPinchLeft();
-       // rightTriggerDown = getPinchRight();
+        if (!actor.leapStatus)
+        { 
+            leftTriggerDown = getPinchLeft();
+            rightTriggerDown = getPinchRight();
+        }
 
-      //  if (leftTriggerDown == true || rightTriggerDown == true)
+        if (leftTriggerDown == true || rightTriggerDown == true)
         {
-            if(m_gameStart == true)
+            actor.NetworkUpdateScore(1);
+        }
+
+        if (m_gameStart == true)
             {
                 StartCoroutine("LoseTime");
                 //m_gameStart = true;
             }  
-        }
+        
 
         countdownText.text = ("Time Left = " + timeLeft + " sec");
 
